@@ -29,6 +29,13 @@ import {
   EngineMetrics,
   AIStatusResponse,
   AIEvaluationReport,
+  AgentRunResult,
+  AgentMetrics,
+  PolicyConfig,
+  PolicyMetrics,
+  PolicyResult,
+  PolicyExplanationCard,
+  PolicyEvaluationAuditRecord,
 } from '../types';
 
 const BASE_URL = '';
@@ -367,4 +374,90 @@ export const apiService = {
     if (!res.ok) throw new Error('Failed to fetch recovery metrics');
     return res.json();
   },
+
+  // ==========================================
+  // PHASE 5: LANGGRAPH AGENT ORCHESTRATION
+  // ==========================================
+
+  async runAgentRecovery(caseId: string, forceDeterministic = false): Promise<AgentRunResult> {
+    const res = await fetch(`${BASE_URL}/api/agent/recover/${caseId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force_deterministic: forceDeterministic }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Agent recovery run failed' }));
+      throw new Error(err.error || `Agent run failed with status ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async getAgentRun(runId: string): Promise<AgentRunResult> {
+    const res = await fetch(`${BASE_URL}/api/agent/runs/${runId}`);
+    if (!res.ok) throw new Error(`Failed to fetch agent run ${runId}`);
+    return res.json();
+  },
+
+  async getAllAgentRuns(): Promise<{ runs: AgentRunResult[]; count: number }> {
+    const res = await fetch(`${BASE_URL}/api/agent/runs`);
+    if (!res.ok) throw new Error('Failed to fetch agent runs');
+    return res.json();
+  },
+
+  async getAgentMetrics(): Promise<AgentMetrics> {
+    const res = await fetch(`${BASE_URL}/api/agent/metrics`);
+    if (!res.ok) throw new Error('Failed to fetch agent metrics');
+    return res.json();
+  },
+
+  async getAgentTools(): Promise<{ tools: Array<{ name: string; description: string; isReadOnly: boolean }> }> {
+    const res = await fetch(`${BASE_URL}/api/agent/tools`);
+    if (!res.ok) throw new Error('Failed to fetch agent tools');
+    return res.json();
+  },
+
+  // ==========================================
+  // PHASE 6: GUARDRAILS & POLICY ENGINE
+  // ==========================================
+
+  async getPolicyConfig(): Promise<{ config: PolicyConfig; version: string; description: string }> {
+    const res = await fetch(`${BASE_URL}/api/policy/config`);
+    if (!res.ok) throw new Error('Failed to fetch policy configuration');
+    return res.json();
+  },
+
+  async getPolicyMetrics(): Promise<PolicyMetrics> {
+    const res = await fetch(`${BASE_URL}/api/policy/metrics`);
+    if (!res.ok) throw new Error('Failed to fetch policy metrics');
+    return res.json();
+  },
+
+  async getPolicyHistory(): Promise<{ history: PolicyEvaluationAuditRecord[]; count: number }> {
+    const res = await fetch(`${BASE_URL}/api/policy/history`);
+    if (!res.ok) throw new Error('Failed to fetch policy history');
+    return res.json();
+  },
+
+  async evaluatePolicy(payload: {
+    case_id?: string;
+    strategy?: string;
+    confidence?: number;
+    reason?: string;
+  }): Promise<{
+    proposed: { strategy: string; confidence: number; reason: string };
+    result: PolicyResult;
+    explanation_card: PolicyExplanationCard;
+  }> {
+    const res = await fetch(`${BASE_URL}/api/policy/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Policy evaluation failed' }));
+      throw new Error(err.error || `Policy evaluation failed with status ${res.status}`);
+    }
+    return res.json();
+  },
 };
+

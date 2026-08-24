@@ -10,13 +10,15 @@ REVIVE is an action-oriented, bounded-autonomy agent that autonomously identifie
 
 ## 📌 Current Status
 
-**Phase 3 — Deterministic Recovery Engine (IMPLEMENTED)**
+**Phase 5 — Agentic Orchestration: LangGraph Multi-Step Recovery Agent (IMPLEMENTED)**
 
-Phase 0 (Project Foundation), Phase 1 (Data Foundation & Ground Truth Benchmarks), Phase 2 (Recovery Simulator), and Phase 3 (Deterministic Recovery Engine) are fully implemented and verified:
+Phases 0 through 5 are fully implemented, verified, and tested:
 - **Phase 0**: Project foundation, full-stack server, fintech command center UI shell, and health endpoints.
 - **Phase 1**: Complete 8-table relational schema, in-memory repository layer with Supabase/PostgreSQL schema mappings, seeded synthetic generator, and 6 Ground Truth Benchmark scenarios.
 - **Phase 2**: Deterministic, isolated Recovery Simulator engine with 7 recovery action tools (`retry_payment`, `schedule_payment_retry`, `generate_payment_link`, `send_customer_notification`, `request_payment_method_update`, `escalate_to_human`, `stop_recovery`), state transition hooks, verification tools (`check_payment_status`, `check_recovery_status`), automated audit logging, and an interactive Simulation Lab workbench.
-- **Phase 3**: End-to-end Deterministic Recovery Engine without LLMs. Features modular pipeline stages (Detection, Investigation, Diagnosis, Strategy Decision Rules, Simulator Execution, Ledger Verification, Outcome Finalization, Live Recovery Metrics), full idempotency protections, audit logging, interactive visual lifecycle tracking in the UI, and automated test suite (45/45 passing assertions).
+- **Phase 3**: End-to-end Deterministic Recovery Engine with 7 pipeline stages, metrics computation, and idempotency (45/45 passing tests).
+- **Phase 4**: AI Decision Engine using Gemini 3.7 Flash (`@google/genai`) with structured schema output, confidence thresholding, fallback mechanisms, and evaluation matrix (34/34 passing tests).
+- **Phase 5**: LangGraph-inspired stateful multi-step agent orchestrator (`ReviveAgentGraph`, `ReviveAgentNodes`, `ReviveAgentToolRegistry`) with 11 discrete graph nodes, real-time node timeline tracking, iterative re-evaluation loop, safety guardrails (max iterations, max actions, anti-looping), and interactive Live Agent Console UI (31/31 passing tests).
 
 ---
 
@@ -27,8 +29,8 @@ Phase 0 (Project Foundation), Phase 1 (Data Foundation & Ground Truth Benchmarks
 - **Database & Data Access**: 8 relational tables, repository pattern, deterministic synthetic data generator *(IMPLEMENTED — Phase 1)*
 - **Recovery Simulator**: 7 deterministic action tools, state mutation engine, audit trail, simulation flag enforcement *(IMPLEMENTED — Phase 2)*
 - **Deterministic Recovery Engine**: Rule-based recovery workflow with 7 pipeline stages, metrics computation, and idempotency *(IMPLEMENTED — Phase 3)*
-- **Reasoning Engine**: Google Gemini API via `@google/genai` *(PLANNED — Phase 4)*
-- **Agent Orchestrator**: LangGraph state machine *(PLANNED — Phase 5)*
+- **Reasoning Engine**: Google Gemini API via `@google/genai` with structured JSON schema *(IMPLEMENTED — Phase 4)*
+- **Agent Orchestrator**: LangGraph multi-step state machine with iterative re-evaluation & bounded tools *(IMPLEMENTED — Phase 5)*
 - **Guardrail Layer**: Deterministic Policy Engine *(PLANNED — Phase 6)*
 
 ---
@@ -117,9 +119,9 @@ npm start
 - [x] **Phase 1 — Data Foundation**: 8 relational tables, synthetic data generator, ground-truth scenarios, and data access layer.
 - [x] **Phase 2 — Recovery Simulator**: 7 deterministic action tools, state mutation engine, outcome determinism, verification tools, and Simulation Lab console.
 - [x] **Phase 3 — Deterministic Recovery Engine**: Rule-based recovery workflow with modular pipeline, metrics engine, idempotency, and automated test suite.
-- [ ] **Phase 4 — Agentic AI**: Gemini-powered context reasoning and strategy formulation.
-- [ ] **Phase 5 — LangGraph**: Stateful graph orchestration and replanning loops.
-- [ ] **Phase 6 — Guardrails + Audit**: Deterministic policy enforcement and audit trails.
-- [ ] **Phase 7 — Evaluation**: 100+ scenario benchmark evaluation harness.
+- [x] **Phase 4 — Agentic AI**: Gemini-powered context reasoning, schema validation, and fallback mechanisms.
+- [x] **Phase 5 — LangGraph Orchestration**: Stateful graph orchestration, bounded tools, and iterative re-evaluation loops.
+- [ ] **Phase 6 — Guardrails + Audit**: Deterministic policy enforcement, safety rules engine, and cryptographically verifiable audit trails.
+- [ ] **Phase 7 — Evaluation**: 100+ scenario benchmark evaluation harness and regression tracking.
 - [ ] **Phase 8 — Premium Frontend**: Live recovery stream and interactive case inspector.
 - [ ] **Phase 9 — Demo Mode**: 3 judge-ready reproducible live demonstration flows.

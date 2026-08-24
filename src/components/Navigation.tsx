@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavTab } from '../types';
-import { LayoutDashboard, FileText, Cpu, BarChart3, ShieldAlert, Sparkles, Terminal } from 'lucide-react';
+import { LayoutDashboard, FileText, Cpu, BarChart3, ShieldAlert, Sparkles, Terminal, ShieldCheck } from 'lucide-react';
 
 interface NavigationProps {
   activeTab: NavTab;
@@ -41,6 +41,12 @@ export const Navigation: React.FC<NavigationProps> = ({
       id: 'live_agent',
       label: 'Live Agent',
       icon: <Cpu className="w-4 h-4" />,
+    },
+    {
+      id: 'policy_guardrails',
+      label: 'Policy & Guardrails',
+      icon: <ShieldCheck className="w-4 h-4" />,
+      badge: 'PHASE 6',
     },
     {
       id: 'analytics',

@@ -8,7 +8,7 @@ export type AgentStatusType =
   | 'ESCALATED'
   | 'ERROR';
 
-export type NavTab = 'overview' | 'cases' | 'simulator' | 'ground_truth' | 'live_agent' | 'analytics' | 'human_review';
+export type NavTab = 'overview' | 'cases' | 'simulator' | 'ground_truth' | 'live_agent' | 'policy_guardrails' | 'analytics' | 'human_review';
 
 export interface SimulatedPaymentLink {
   link_id: string;
@@ -507,5 +507,162 @@ export interface EngineMetrics {
   cases_open: number;
   average_actions_per_case: number;
   simulated: true;
+}
+
+export type AgentNodeName =
+  | 'LOAD_CASE'
+  | 'INVESTIGATE'
+  | 'DIAGNOSE'
+  | 'REASON'
+  | 'VALIDATE_DECISION'
+  | 'POLICY_ENGINE'
+  | 'EXECUTE_ACTION'
+  | 'VERIFY_RESULT'
+  | 'RE_EVALUATE'
+  | 'COMPLETE'
+  | 'ESCALATE'
+  | 'STOP';
+
+export type PolicyDecision = 'ALLOW' | 'BLOCK' | 'MODIFY' | 'ESCALATE' | 'STOP';
+
+export type PolicyRuleId =
+  | 'MAX_RETRIES_EXCEEDED'
+  | 'MAX_ACTIONS_EXCEEDED'
+  | 'HIGH_VALUE_TRANSACTION'
+  | 'LOW_AI_CONFIDENCE'
+  | 'DUPLICATE_ACTION'
+  | 'CASE_ALREADY_RECOVERED'
+  | 'CASE_ALREADY_ESCALATED'
+  | 'CASE_ALREADY_STOPPED'
+  | 'PAYMENT_ALREADY_SUCCESSFUL'
+  | 'INVALID_STRATEGY'
+  | 'INCOMPATIBLE_ACTION'
+  | 'MISSING_REQUIRED_DATA'
+  | 'CONTACT_LIMIT_EXCEEDED'
+  | 'RECOVERY_WINDOW_EXCEEDED'
+  | 'DEFAULT_ALLOW';
+
+export interface PolicyResult {
+  decision: PolicyDecision;
+  original_strategy: string;
+  approved_strategy: string | null;
+  reason: string;
+  policy_id: string;
+  rules_triggered: PolicyRuleId[];
+  requires_human_review: boolean;
+  explanation: string;
+}
+
+export interface PolicyExplanationCard {
+  title: string;
+  ai_recommended: string;
+  revive_policy: string;
+  because: string;
+  result: string;
+}
+
+export interface PolicyMetrics {
+  policy_evaluations: number;
+  policy_allowed: number;
+  policy_modified: number;
+  policy_blocked: number;
+  policy_escalated: number;
+  policy_stopped: number;
+  policy_override_rate: number;
+  policy_block_rate: number;
+  policy_modification_rate: number;
+  low_confidence_escalations: number;
+  high_value_escalations: number;
+  duplicate_action_blocks: number;
+  max_retry_blocks: number;
+  automated_actions: number;
+  policy_blocked_actions: number;
+  policy_modified_actions: number;
+  policy_escalations: number;
+  autonomous_action_rate: number;
+  guardrail_intervention_rate: number;
+  revenue_at_risk_blocked: number;
+  revenue_at_risk_escalated: number;
+  revenue_recovered: number;
+  revenue_prevented_from_unsafe_action: number;
+}
+
+export interface PolicyConfig {
+  MAX_PAYMENT_RETRIES: number;
+  MAX_ACTIONS_PER_CASE: number;
+  HIGH_VALUE_THRESHOLD: number;
+  AI_CONFIDENCE_THRESHOLD: number;
+  MAX_CUSTOMER_CONTACTS: number;
+  RECOVERY_WINDOW_DAYS: number;
+  POLICY_VERSION: string;
+}
+
+export interface PolicyEvaluationAuditRecord {
+  agent_run_id: string;
+  case_id: string;
+  policy_version: string;
+  original_strategy: string;
+  approved_strategy: string | null;
+  decision: PolicyDecision;
+  rules_triggered: PolicyRuleId[];
+  reason: string;
+  timestamp: string;
+}
+
+export interface AgentRunTimelineEvent {
+  id: string;
+  timestamp: string;
+  node: AgentNodeName;
+  title: string;
+  description: string;
+  status: 'completed' | 'failed' | 'in_progress';
+  data?: Record<string, unknown>;
+}
+
+export interface AgentRunResult {
+  agent_run_id: string;
+  case_id: string;
+  status: 'RECOVERED' | 'ESCALATED' | 'STOPPED' | 'FAILED';
+  final_outcome: string;
+  amount_recovered: number;
+  actions_taken: number;
+  iterations: number;
+  decision_source: 'GEMINI' | 'DETERMINISTIC_FALLBACK' | 'DETERMINISTIC';
+  confidence: number;
+  diagnosis: string;
+  original_strategy?: string;
+  approved_strategy?: string;
+  policy_result?: PolicyResult;
+  policy_explanation_card?: PolicyExplanationCard;
+  summary: string;
+  explanation: string;
+  termination_reason?: string;
+  timeline: AgentRunTimelineEvent[];
+  simulated: boolean;
+}
+
+export interface AgentMetrics {
+  total_agent_runs: number;
+  agent_successes: number;
+  agent_failures: number;
+  agent_escalations: number;
+  agent_stops: number;
+  single_step_recovery_rate: number;
+  multi_step_recovery_rate: number;
+  average_steps_to_recovery: number;
+  recovery_after_re_evaluation: number;
+  repeated_action_prevention: number;
+  recovery_rate: number;
+  revenue_recovered: number;
+  average_iterations: number;
+  average_actions: number;
+  decision_agreement: number;
+  fallback_rate: number;
+  low_confidence_rate: number;
+  max_iteration_terminations: number;
+  invalid_decision_blocks: number;
+  low_confidence_escalations: number;
+  duplicate_action_preventions: number;
+  tool_failures: number;
 }
 

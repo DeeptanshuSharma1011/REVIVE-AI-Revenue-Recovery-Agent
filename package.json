@@ -9,6 +9,7 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "test:ai": "tsx scripts/test_ai_decision_engine.ts",
+    "test:agent": "tsx scripts/test_agent_orchestration.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

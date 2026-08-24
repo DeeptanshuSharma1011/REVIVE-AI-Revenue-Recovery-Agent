@@ -6,6 +6,7 @@ import { SimulationLabPage } from './pages/SimulationLabPage';
 import { RecoveryCasesPage } from './pages/RecoveryCasesPage';
 import { GroundTruthPage } from './pages/GroundTruthPage';
 import { LiveAgentPage } from './pages/LiveAgentPage';
+import { PolicyGuardrailsPage } from './pages/PolicyGuardrailsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { HumanReviewPage } from './pages/HumanReviewPage';
 import { apiService } from './services/api';
@@ -97,6 +98,7 @@ export default function App() {
         {activeTab === 'cases' && <RecoveryCasesPage />}
         {activeTab === 'ground_truth' && <GroundTruthPage />}
         {activeTab === 'live_agent' && <LiveAgentPage />}
+        {activeTab === 'policy_guardrails' && <PolicyGuardrailsPage />}
         {activeTab === 'analytics' && <AnalyticsPage />}
         {activeTab === 'human_review' && <HumanReviewPage />}
       </main>
@@ -104,11 +106,11 @@ export default function App() {
       {/* System Footer */}
       <footer className="border-t border-slate-900 bg-slate-950 px-6 py-4 text-center text-xs text-slate-500 font-mono flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-          <span>REVIVE Core Engine • Phase 4 (AI Decision Engine)</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span>REVIVE Core Engine • Phase 6 (Guardrails & Policy Engine)</span>
         </div>
         <div>
-          <span>Bounded Autonomy • Gemini 3.7 Flash • Strict Schema Validation • Deterministic Fallback</span>
+          <span>Deterministic Policy Firewall • Bounded Autonomy • Cryptographic Audit Trails • Safe Escalations</span>
         </div>
       </footer>
     </div>

@@ -18,6 +18,10 @@ import { recoveryEngine } from './database/engine/RecoveryEngine';
 import { strategyEngine } from './database/engine/strategy';
 import { aiRecoveryDecisionService } from './database/engine/ai/AIRecoveryDecisionService';
 import { aiEvaluationEngine } from './database/engine/ai/AIEvaluationEngine';
+import { reviveAgentGraph } from './database/engine/agent/graph';
+import { agentToolRegistry } from './database/engine/agent/tools';
+import { policyEngine } from './database/engine/policy/PolicyEngine';
+import { getPolicyConfig } from './database/engine/policy/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -408,14 +412,119 @@ async function startServer() {
     });
   });
 
+  // ==========================================
+  // PHASE 5: LANGGRAPH AGENT ORCHESTRATION ENDPOINTS
+  // ==========================================
+
+  // 1. Recover case using LangGraph Multi-Step Agent
+  app.post('/api/agent/recover/:case_id', async (req, res) => {
+    try {
+      const caseId = req.params.case_id;
+      const forceDeterministic = Boolean(req.body?.force_deterministic);
+      const result = await reviveAgentGraph.runCase(caseId, { forceDeterministic });
+      res.status(200).json(result);
+    } catch (err: any) {
+      res.status(err.message.includes('not found') ? 404 : 400).json({
+        error: err.message,
+        simulated: true,
+      });
+    }
+  });
+
+  // 2. Get specific agent run details
+  app.get('/api/agent/runs/:run_id', (req, res) => {
+    const run = reviveAgentGraph.getRunById(req.params.run_id);
+    if (!run) {
+      res.status(404).json({ error: 'Agent run not found', runId: req.params.run_id });
+      return;
+    }
+    res.status(200).json(run);
+  });
+
+  // 3. Get all agent runs history
+  app.get('/api/agent/runs', (req, res) => {
+    const runs = reviveAgentGraph.getAllRuns();
+    res.status(200).json({ runs, count: runs.length });
+  });
+
+  // 4. Get comprehensive agent & safety metrics
+  app.get('/api/agent/metrics', (req, res) => {
+    const metrics = reviveAgentGraph.getMetrics();
+    res.status(200).json(metrics);
+  });
+
+  // 5. List registered agent tools
+  app.get('/api/agent/tools', (req, res) => {
+    res.status(200).json({
+      tools: agentToolRegistry.listTools(),
+      count: agentToolRegistry.listTools().length,
+      unrestricted_access: false,
+    });
+  });
+
   app.get('/api/agent/status', (req, res) => {
     res.status(200).json({
       status: 'READY',
       currentCaseId: null,
       currentStep: null,
       lastUpdated: new Date().toISOString(),
-      phase: 'Phase 3 — Deterministic Recovery Engine Active',
+      phase: 'Phase 6 — Guardrails & Policy Engine Active',
+      metrics: reviveAgentGraph.getMetrics(),
     });
+  });
+
+  // ==========================================
+  // PHASE 6: GUARDRAILS & POLICY ENGINE ENDPOINTS
+  // ==========================================
+
+  // 1. Get active Policy Configuration & Thresholds
+  app.get('/api/policy/config', (req, res) => {
+    res.status(200).json({
+      config: getPolicyConfig(),
+      version: getPolicyConfig().POLICY_VERSION,
+      description: 'REVIVE Deterministic Policy Firewall and Safety Thresholds',
+    });
+  });
+
+  // 2. Get real-time Policy & Safety Metrics
+  app.get('/api/policy/metrics', (req, res) => {
+    const metrics = policyEngine.getMetrics();
+    res.status(200).json(metrics);
+  });
+
+  // 3. Get Policy Evaluation History
+  app.get('/api/policy/history', (req, res) => {
+    const history = policyEngine.getHistory();
+    res.status(200).json({
+      history,
+      count: history.length,
+    });
+  });
+
+  // 4. Test/Simulate Policy Evaluation on arbitrary context
+  app.post('/api/policy/evaluate', (req, res) => {
+    try {
+      const { case_id, strategy, confidence, reason } = req.body;
+      const caseContext = case_id ? recoveryEngine.getCaseContext(case_id) : null;
+      const diagnosis = case_id ? recoveryEngine.getCaseDiagnosis(case_id) : null;
+
+      const proposed = {
+        strategy: strategy || 'RETRY_PAYMENT',
+        confidence: typeof confidence === 'number' ? confidence : 0.9,
+        reason: reason || 'Test evaluation',
+      };
+
+      const result = policyEngine.evaluate(caseContext, proposed, diagnosis);
+      const explanationCard = policyEngine.generateExplanationCard(proposed, result);
+
+      res.status(200).json({
+        proposed,
+        result,
+        explanation_card: explanationCard,
+      });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   // ==========================================
