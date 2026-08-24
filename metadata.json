@@ -1,0 +1,6 @@
+{
+  "name": "REVIVE",
+  "description": "Autonomous AI Revenue Recovery Agent - Revenue Intelligence & Value Intervention for Viable Earnings",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
