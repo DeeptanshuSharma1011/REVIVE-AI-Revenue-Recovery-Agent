@@ -334,13 +334,13 @@ export const SimulationLabPage: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight">Phase 2 — Recovery Simulator Lab</h1>
+              <h1 className="text-xl font-bold tracking-tight">Simulate Recovery Scenarios</h1>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-medium border border-emerald-500/30">
                 SIMULATION ENGINE ACTIVE
               </span>
             </div>
             <p className="text-sm text-neutral-400 mt-1">
-              Deterministic test harness for the 7 recovery actions. State changes, action records, and audit logs
+              Interactive test harness for the 7 recovery actions. State changes, action records, and audit logs
               execute with zero randomness and complete isolation.
             </p>
           </div>

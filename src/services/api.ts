@@ -36,6 +36,10 @@ import {
   PolicyResult,
   PolicyExplanationCard,
   PolicyEvaluationAuditRecord,
+  EvaluationRun,
+  EvaluationRunSummary,
+  EvaluationCaseResult,
+  BaselineComparison,
 } from '../types';
 
 const BASE_URL = '';
@@ -459,5 +463,75 @@ export const apiService = {
     }
     return res.json();
   },
+
+  // ==========================================
+  // PHASE 7: EVALUATION & REVENUE INTELLIGENCE
+  // ==========================================
+
+  async runEvaluation(payload?: {
+    runName?: string;
+    forceDeterministic?: boolean;
+    scenarioTags?: string[];
+  }): Promise<EvaluationRun> {
+    const res = await fetch(`${BASE_URL}/api/evaluation/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Evaluation run failed' }));
+      throw new Error(err.error || `Evaluation run failed with status ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async getEvaluationRuns(): Promise<{ runs: EvaluationRunSummary[]; count: number; latest: EvaluationRun | null }> {
+    const res = await fetch(`${BASE_URL}/api/evaluation/runs`);
+    if (!res.ok) throw new Error('Failed to fetch evaluation runs');
+    return res.json();
+  },
+
+  async getEvaluationRun(id: string): Promise<EvaluationRun> {
+    const res = await fetch(`${BASE_URL}/api/evaluation/runs/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch evaluation run ${id}`);
+    return res.json();
+  },
+
+  async getEvaluationRunMetrics(id: string): Promise<Record<string, unknown>> {
+    const res = await fetch(`${BASE_URL}/api/evaluation/runs/${id}/metrics`);
+    if (!res.ok) throw new Error(`Failed to fetch metrics for evaluation run ${id}`);
+    return res.json();
+  },
+
+  async getEvaluationRunComparison(id: string): Promise<{
+    evaluation_run_id: string;
+    run_name: string;
+    baseline_comparison: BaselineComparison;
+    scenario_performance: any[];
+  }> {
+    const res = await fetch(`${BASE_URL}/api/evaluation/runs/${id}/comparison`);
+    if (!res.ok) throw new Error(`Failed to fetch comparison for evaluation run ${id}`);
+    return res.json();
+  },
+
+  async getEvaluationRunCases(
+    id: string,
+    params?: { status?: string; scenario?: string; search?: string }
+  ): Promise<{ cases: EvaluationCaseResult[]; total: number; total_unfiltered: number }> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.scenario) query.set('scenario', params.scenario);
+    if (params?.search) query.set('search', params.search);
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${BASE_URL}/api/evaluation/runs/${id}/cases${qs}`);
+    if (!res.ok) throw new Error(`Failed to fetch cases for evaluation run ${id}`);
+    return res.json();
+  },
+
+  getEvaluationExportUrl(id: string): string {
+    return `${BASE_URL}/api/evaluation/runs/${id}/export`;
+  },
 };
+
 

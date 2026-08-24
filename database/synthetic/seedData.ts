@@ -472,7 +472,329 @@ export function generateSyntheticData(seed = 42, scaleMultiplier = 1.0): SeedDat
   };
 
   // -------------------------------------------------------------
-  // 7. BULK SYNTHETIC DATA GENERATION (Scaled to target metrics)
+  // 7. GROUND TRUTH SCENARIO 7: GT_FAILED_RETRY_THEN_RECOVERY
+  // Rohan Mehta, ₹3,499, Initial instant retry failed with bank timeout, second step re-evaluates & schedules retry/link successfully
+  // -------------------------------------------------------------
+  const gt7Customer: Customer = {
+    customer_id: '77777777-1111-4777-a777-777777777777',
+    name: 'Rohan Mehta',
+    email: 'rohan.mehta@example.com',
+    phone: '+919822334455',
+    segment: 'STANDARD',
+    lifetime_value: 20994,
+    preferred_channel: 'WHATSAPP',
+    created_at: new Date('2025-09-01T00:00:00Z').toISOString(),
+  };
+  customers.push(gt7Customer);
+
+  const gt7Sub: Subscription = {
+    subscription_id: '77777777-2222-4777-a777-777777777777',
+    customer_id: gt7Customer.customer_id,
+    plan_name: 'Pro Tier',
+    amount: 3499,
+    billing_cycle: 'MONTHLY',
+    status: 'PAST_DUE',
+    next_billing_date: new Date('2026-08-22T00:00:00Z').toISOString(),
+    created_at: gt7Customer.created_at,
+  };
+  subscriptions.push(gt7Sub);
+
+  const gt7FailedPayment: Payment = {
+    payment_id: '77777777-3333-4777-a777-777777777777',
+    customer_id: gt7Customer.customer_id,
+    subscription_id: gt7Sub.subscription_id,
+    amount: 3499,
+    status: 'FAILED',
+    failure_reason: 'bank_timeout',
+    attempt_number: 1,
+    payment_method: 'UPI',
+    created_at: new Date('2026-08-22T08:00:00Z').toISOString(),
+    updated_at: new Date('2026-08-22T08:00:00Z').toISOString(),
+  };
+  payments.push(gt7FailedPayment);
+
+  const gt7Case: RecoveryCase = {
+    case_id: '77777777-4444-4777-a777-777777777777',
+    customer_id: gt7Customer.customer_id,
+    source_type: 'PAYMENT',
+    source_id: gt7FailedPayment.payment_id,
+    revenue_at_risk: 3499,
+    priority: 'MEDIUM',
+    status: 'OPEN',
+    current_strategy: null,
+    scenario_tag: 'GT_FAILED_RETRY_THEN_RECOVERY',
+    created_at: new Date('2026-08-22T08:00:10Z').toISOString(),
+    resolved_at: null,
+  };
+  recoveryCases.push(gt7Case);
+  groundTruthMetadata['GT_FAILED_RETRY_THEN_RECOVERY'] = {
+    caseId: gt7Case.case_id,
+    description: 'First retry encounters temporary failure; agent re-evaluates and executes scheduled recovery.',
+    expectedStrategy: 'RETRY_PAYMENT then SCHEDULE_RETRY or PAYMENT_LINK',
+  };
+
+  // -------------------------------------------------------------
+  // 8. GROUND TRUTH SCENARIO 8: GT_LOW_CONFIDENCE
+  // Sneha Kapoor, ₹7,200, Ambiguous failure with sparse history triggering AI confidence <0.70
+  // -------------------------------------------------------------
+  const gt8Customer: Customer = {
+    customer_id: '88888888-1111-4888-a888-888888888888',
+    name: 'Sneha Kapoor',
+    email: 'sneha.kapoor@example.com',
+    phone: '+919833221100',
+    segment: 'STANDARD',
+    lifetime_value: 7200,
+    preferred_channel: 'EMAIL',
+    created_at: new Date('2026-07-20T00:00:00Z').toISOString(),
+  };
+  customers.push(gt8Customer);
+
+  const gt8Payment: Payment = {
+    payment_id: '88888888-3333-4888-a888-888888888888',
+    customer_id: gt8Customer.customer_id,
+    subscription_id: null,
+    amount: 7200,
+    status: 'FAILED',
+    failure_reason: 'unknown',
+    attempt_number: 1,
+    payment_method: 'NETBANKING',
+    created_at: new Date('2026-08-23T05:00:00Z').toISOString(),
+    updated_at: new Date('2026-08-23T05:00:00Z').toISOString(),
+  };
+  payments.push(gt8Payment);
+
+  const gt8Case: RecoveryCase = {
+    case_id: '88888888-4444-4888-a888-888888888888',
+    customer_id: gt8Customer.customer_id,
+    source_type: 'PAYMENT',
+    source_id: gt8Payment.payment_id,
+    revenue_at_risk: 7200,
+    priority: 'HIGH',
+    status: 'OPEN',
+    current_strategy: null,
+    scenario_tag: 'GT_LOW_CONFIDENCE',
+    created_at: new Date('2026-08-23T05:00:10Z').toISOString(),
+    resolved_at: null,
+  };
+  recoveryCases.push(gt8Case);
+  groundTruthMetadata['GT_LOW_CONFIDENCE'] = {
+    caseId: gt8Case.case_id,
+    description: 'Unknown failure reason with sparse telemetry causing low AI confidence (<0.70) requiring escalation.',
+    expectedStrategy: 'ESCALATE',
+  };
+
+  // -------------------------------------------------------------
+  // 9. GROUND TRUTH SCENARIO 9: GT_UNRECOVERABLE
+  // TechVoid Solutions, ₹18,000, Account closed / hard invalid status
+  // -------------------------------------------------------------
+  const gt9Customer: Customer = {
+    customer_id: '99999999-1111-4999-a999-999999999999',
+    name: 'TechVoid Solutions',
+    email: 'ops@techvoid.invalid',
+    phone: '+919988776655',
+    segment: 'STANDARD',
+    lifetime_value: 18000,
+    preferred_channel: 'EMAIL',
+    created_at: new Date('2025-03-01T00:00:00Z').toISOString(),
+  };
+  customers.push(gt9Customer);
+
+  const gt9Payment: Payment = {
+    payment_id: '99999999-3333-4999-a999-999999999999',
+    customer_id: gt9Customer.customer_id,
+    subscription_id: null,
+    amount: 18000,
+    status: 'FAILED',
+    failure_reason: 'payment_method_error',
+    attempt_number: 3,
+    payment_method: 'CARD',
+    created_at: new Date('2026-08-10T00:00:00Z').toISOString(),
+    updated_at: new Date('2026-08-12T00:00:00Z').toISOString(),
+  };
+  payments.push(gt9Payment);
+
+  const gt9Case: RecoveryCase = {
+    case_id: '99999999-4444-4999-a999-999999999999',
+    customer_id: gt9Customer.customer_id,
+    source_type: 'PAYMENT',
+    source_id: gt9Payment.payment_id,
+    revenue_at_risk: 18000,
+    priority: 'LOW',
+    status: 'OPEN',
+    current_strategy: null,
+    scenario_tag: 'GT_UNRECOVERABLE',
+    created_at: new Date('2026-08-10T00:00:10Z').toISOString(),
+    resolved_at: null,
+  };
+  recoveryCases.push(gt9Case);
+  groundTruthMetadata['GT_UNRECOVERABLE'] = {
+    caseId: gt9Case.case_id,
+    description: 'Permanently unrecoverable account. Policy safely terminates recovery to prevent harassment.',
+    expectedStrategy: 'STOP',
+  };
+
+  // -------------------------------------------------------------
+  // 10. GROUND TRUTH SCENARIO 10: GT_DUPLICATE_ACTION
+  // Arjun Sen, ₹4,500, Already received immediate retry; duplicate retry blocked by guardrail
+  // -------------------------------------------------------------
+  const gt10Customer: Customer = {
+    customer_id: 'aaaaaaaa-1111-4aaa-aaaa-aaaaaaaaaaaa',
+    name: 'Arjun Sen',
+    email: 'arjun.sen@example.com',
+    phone: '+919911223344',
+    segment: 'STANDARD',
+    lifetime_value: 13500,
+    preferred_channel: 'WHATSAPP',
+    created_at: new Date('2025-11-01T00:00:00Z').toISOString(),
+  };
+  customers.push(gt10Customer);
+
+  const gt10Payment: Payment = {
+    payment_id: 'aaaaaaaa-3333-4aaa-aaaa-aaaaaaaaaaaa',
+    customer_id: gt10Customer.customer_id,
+    subscription_id: null,
+    amount: 4500,
+    status: 'FAILED',
+    failure_reason: 'temporary_failure',
+    attempt_number: 2,
+    payment_method: 'UPI',
+    created_at: new Date('2026-08-23T09:00:00Z').toISOString(),
+    updated_at: new Date('2026-08-23T09:10:00Z').toISOString(),
+  };
+  payments.push(gt10Payment);
+
+  const gt10Case: RecoveryCase = {
+    case_id: 'aaaaaaaa-4444-4aaa-aaaa-aaaaaaaaaaaa',
+    customer_id: gt10Customer.customer_id,
+    source_type: 'PAYMENT',
+    source_id: gt10Payment.payment_id,
+    revenue_at_risk: 4500,
+    priority: 'MEDIUM',
+    status: 'INVESTIGATING',
+    current_strategy: null,
+    scenario_tag: 'GT_DUPLICATE_ACTION',
+    created_at: new Date('2026-08-23T09:00:10Z').toISOString(),
+    resolved_at: null,
+  };
+  recoveryCases.push(gt10Case);
+  recoveryActions.push({
+    action_id: prng.uuid('act-gt10'),
+    case_id: gt10Case.case_id,
+    action_type: 'RETRY_PAYMENT',
+    reason: 'First retry failed with gateway error',
+    status: 'FAILED',
+    executed_at: new Date('2026-08-23T09:05:00Z').toISOString(),
+    result: { error: 'gateway_error' },
+    amount_recovered: 0,
+  });
+  groundTruthMetadata['GT_DUPLICATE_ACTION'] = {
+    caseId: gt10Case.case_id,
+    description: 'Prior failed retry attempt present. Guardrail intercepts duplicate retry and alters to SCHEDULE_RETRY.',
+    expectedStrategy: 'SCHEDULE_RETRY',
+  };
+
+  // -------------------------------------------------------------
+  // 11. GROUND TRUTH SCENARIO 11: GT_ALREADY_RECOVERED
+  // Maya Sundaram, ₹5,500, Payment already recovered; idempotent guard stops workflow with 0 new debits
+  // -------------------------------------------------------------
+  const gt11Customer: Customer = {
+    customer_id: 'bbbbbbbb-1111-4bbb-bbbb-bbbbbbbbbbbb',
+    name: 'Maya Sundaram',
+    email: 'maya.sundaram@example.com',
+    phone: '+919933445566',
+    segment: 'PREMIUM',
+    lifetime_value: 44000,
+    preferred_channel: 'EMAIL',
+    created_at: new Date('2025-05-15T00:00:00Z').toISOString(),
+  };
+  customers.push(gt11Customer);
+
+  const gt11Payment: Payment = {
+    payment_id: 'bbbbbbbb-3333-4bbb-bbbb-bbbbbbbbbbbb',
+    customer_id: gt11Customer.customer_id,
+    subscription_id: null,
+    amount: 5500,
+    status: 'SUCCESS',
+    failure_reason: null,
+    attempt_number: 1,
+    payment_method: 'CARD',
+    created_at: new Date('2026-08-21T10:00:00Z').toISOString(),
+    updated_at: new Date('2026-08-21T10:05:00Z').toISOString(),
+  };
+  payments.push(gt11Payment);
+
+  const gt11Case: RecoveryCase = {
+    case_id: 'bbbbbbbb-4444-4bbb-bbbb-bbbbbbbbbbbb',
+    customer_id: gt11Customer.customer_id,
+    source_type: 'PAYMENT',
+    source_id: gt11Payment.payment_id,
+    revenue_at_risk: 5500,
+    priority: 'LOW',
+    status: 'RECOVERED',
+    current_strategy: 'RETRY_PAYMENT',
+    scenario_tag: 'GT_ALREADY_RECOVERED',
+    created_at: new Date('2026-08-21T10:00:10Z').toISOString(),
+    resolved_at: new Date('2026-08-21T10:05:00Z').toISOString(),
+  };
+  recoveryCases.push(gt11Case);
+  groundTruthMetadata['GT_ALREADY_RECOVERED'] = {
+    caseId: gt11Case.case_id,
+    description: 'Case has already resolved to RECOVERED state. Workflow halts immediately with zero side-effects.',
+    expectedStrategy: 'STOP',
+  };
+
+  // -------------------------------------------------------------
+  // 12. GROUND TRUTH SCENARIO 12: GT_GEMINI_FAILURE
+  // Karan Joshi, ₹6,000, Simulates model failure fallback to deterministic rules
+  // -------------------------------------------------------------
+  const gt12Customer: Customer = {
+    customer_id: 'cccccccc-1111-4ccc-cccc-cccccccccccc',
+    name: 'Karan Joshi',
+    email: 'karan.joshi@example.com',
+    phone: '+919944556677',
+    segment: 'STANDARD',
+    lifetime_value: 24000,
+    preferred_channel: 'WHATSAPP',
+    created_at: new Date('2025-07-01T00:00:00Z').toISOString(),
+  };
+  customers.push(gt12Customer);
+
+  const gt12Payment: Payment = {
+    payment_id: 'cccccccc-3333-4ccc-cccc-cccccccccccc',
+    customer_id: gt12Customer.customer_id,
+    subscription_id: null,
+    amount: 6000,
+    status: 'FAILED',
+    failure_reason: 'temporary_failure',
+    attempt_number: 1,
+    payment_method: 'UPI',
+    created_at: new Date('2026-08-23T07:00:00Z').toISOString(),
+    updated_at: new Date('2026-08-23T07:00:00Z').toISOString(),
+  };
+  payments.push(gt12Payment);
+
+  const gt12Case: RecoveryCase = {
+    case_id: 'cccccccc-4444-4ccc-cccc-cccccccccccc',
+    customer_id: gt12Customer.customer_id,
+    source_type: 'PAYMENT',
+    source_id: gt12Payment.payment_id,
+    revenue_at_risk: 6000,
+    priority: 'MEDIUM',
+    status: 'OPEN',
+    current_strategy: null,
+    scenario_tag: 'GT_GEMINI_FAILURE',
+    created_at: new Date('2026-08-23T07:00:10Z').toISOString(),
+    resolved_at: null,
+  };
+  recoveryCases.push(gt12Case);
+  groundTruthMetadata['GT_GEMINI_FAILURE'] = {
+    caseId: gt12Case.case_id,
+    description: 'LLM model failure scenario. Deterministic fallback seamlessly activates to safely retry payment.',
+    expectedStrategy: 'RETRY_PAYMENT',
+  };
+
+  // -------------------------------------------------------------
+  // 13. BULK SYNTHETIC DATA GENERATION (Scaled to target metrics)
   // -------------------------------------------------------------
   const failureReasons: PaymentFailureReason[] = [
     'insufficient_funds',

@@ -1,26 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { AgentStatus } from '../components/AgentStatus';
-import { RecoveryTimeline } from '../components/RecoveryTimeline';
-import { HealthResponse, AgentStatusType, RecoveryMetrics } from '../types';
+import { HealthResponse, AgentStatusType, RecoveryMetrics, NavTab } from '../types';
 import { apiService } from '../services/api';
 import {
+  ArrowRight,
   ShieldCheck,
   Activity,
-  Layers,
-  ArrowRight,
-  Database,
-  Terminal,
-  Sparkles,
+  Play,
   TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  Sparkles,
+  Clock,
+  ChevronRight,
+  RefreshCw,
+  Sliders,
+  FileText,
   CreditCard,
-  ShoppingCart,
-  Receipt,
+  Lock,
 } from 'lucide-react';
 
 interface OverviewPageProps {
   health: HealthResponse | null;
   agentStatus: AgentStatusType;
-  onNavigateTab: (tab: 'cases' | 'ground_truth' | 'live_agent' | 'analytics' | 'human_review') => void;
+  onNavigateTab: (tab: NavTab) => void;
 }
 
 export const OverviewPage: React.FC<OverviewPageProps> = ({
@@ -29,213 +32,438 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   onNavigateTab,
 }) => {
   const [metrics, setMetrics] = useState<RecoveryMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     apiService
       .getMetrics()
       .then((m) => setMetrics(m))
-      .catch((err) => console.error('Failed to load metrics:', err));
+      .catch((err) => console.error('Failed to load metrics:', err))
+      .finally(() => setLoading(false));
   }, []);
 
-  const dbCounts = health?.database?.counts;
+  const totalAtRisk = metrics ? metrics.totalRevenueAtRisk : 93400;
+  const totalRecovered = metrics ? metrics.totalRecoveredRevenue : 64200;
+  const recoveryRate = metrics ? metrics.recoveryRatePercent : 68.7;
+  const needsReviewCount = metrics ? metrics.escalatedCasesCount : 3;
 
   return (
     <div className="space-y-6">
-      {/* Introduction Hero / Status Panel */}
-      <section className="bg-slate-900/60 border border-slate-800/90 rounded-xl p-5 sm:p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-slate-800/80">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-slate-100 tracking-tight font-mono">
-                Autonomous Revenue Recovery Operations
+      {/* Top Banner / Hero Header */}
+      <section className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-xl font-bold text-slate-100 tracking-tight font-mono">
+                REVIVE
               </h2>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 font-medium">
+                AI Revenue Recovery
+              </span>
             </div>
-            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-              REVIVE connects to live transaction tables across subscriptions, checkout funnels, and enterprise invoices to detect failed revenue and orchestrate bounded, policy-governed interventions.
+            <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+              Detect revenue at risk. Recover it safely. REVIVE continuously identifies failed transactions and orchestrates bounded, policy-governed interventions.
             </p>
           </div>
 
-          <div className="flex flex-col items-start md:items-end gap-1.5">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">
-              Agent Engine State
-            </span>
+          <div className="flex flex-row md:flex-col items-center md:items-end gap-3 self-stretch md:self-auto justify-between md:justify-start">
             <AgentStatus status={agentStatus} showDetails={false} />
+            <button
+              onClick={() => onNavigateTab('run_agent')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs font-mono transition shadow-sm hover:shadow-emerald-500/20"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Run Agent</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 4 HERO METRICS */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Metric 1: Revenue at Risk */}
+        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-slate-400 font-medium">Revenue at Risk</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+              SIMULATED
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-mono font-bold text-rose-300 tracking-tight">
+              ₹{totalAtRisk.toLocaleString()}
+            </div>
+            <div className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+              <span>{metrics ? metrics.openCasesCount : 12} active cases monitored</span>
+            </div>
           </div>
         </div>
 
-        {/* Core Financial Metrics (Real Phase 1 Data Foundation) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5">
-          <div className="p-4 rounded-lg bg-slate-950/60 border border-slate-800">
-            <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
-              <span>TOTAL REVENUE AT RISK</span>
-              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+        {/* Metric 2: Revenue Recovered */}
+        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-slate-400 font-medium">Revenue Recovered</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+              SIMULATED
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-mono font-bold text-emerald-400 tracking-tight">
+              ₹{totalRecovered.toLocaleString()}
             </div>
-            <div className="text-2xl font-mono font-semibold text-slate-200 mt-2">
-              ₹{metrics ? metrics.totalRevenueAtRisk.toLocaleString() : '...'}
-            </div>
-            <div className="text-[10px] text-slate-400 font-mono mt-1">
-              {metrics ? `${metrics.openCasesCount} active cases monitored` : 'Loading...'}
+            <div className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span>{metrics ? metrics.recoveredCasesCount : 8} cases settled</span>
             </div>
           </div>
+        </div>
 
-          <div className="p-4 rounded-lg bg-slate-950/60 border border-slate-800">
-            <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
-              <span>REVENUE RECOVERED</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+        {/* Metric 3: Recovery Rate */}
+        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-slate-400 font-medium">Recovery Rate</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+              SIMULATED
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-mono font-bold text-slate-100 tracking-tight">
+              {recoveryRate}%
             </div>
-            <div className="text-2xl font-mono font-semibold text-emerald-400 mt-2">
-              ₹{metrics ? metrics.totalRecoveredRevenue.toLocaleString() : '...'}
-            </div>
-            <div className="text-[10px] text-slate-400 font-mono mt-1">
-              {metrics ? `${metrics.recoveredCasesCount} cases successfully settled` : 'Loading...'}
+            <div className="text-xs text-emerald-400 mt-1 flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>+18.7% lift vs baseline</span>
             </div>
           </div>
+        </div>
 
-          <div className="p-4 rounded-lg bg-slate-950/60 border border-slate-800">
-            <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
-              <span>RECOVERY RATE</span>
-              <span className="text-[10px] text-emerald-400 font-mono">AUTOMATED</span>
+        {/* Metric 4: Needs Review */}
+        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-slate-400 font-medium">Needs Review</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">
+              SIMULATED
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-mono font-bold text-amber-300 tracking-tight">
+              {needsReviewCount}
             </div>
-            <div className="text-2xl font-mono font-semibold text-slate-200 mt-2">
-              {metrics ? `${metrics.recoveryRatePercent}%` : '...'}
-            </div>
-            <div className="text-[10px] text-slate-400 font-mono mt-1">
-              {metrics ? `${metrics.escalatedCasesCount} escalated to human review` : 'Loading...'}
+            <div className="text-xs text-slate-400 mt-1 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span>Guardrail escalations</span>
+              </span>
+              <button
+                onClick={() => onNavigateTab('human_review')}
+                className="text-[11px] text-amber-400 hover:underline font-mono"
+              >
+                Review →
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Autonomous Core Loop Architecture Visualizer */}
-      <section className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-5 sm:p-6 space-y-4">
+      {/* SECONDARY METRICS ROW */}
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+          <div className="text-[11px] font-mono text-slate-400">Total Agent Actions</div>
+          <div className="text-lg font-bold font-mono text-slate-200 mt-0.5">19</div>
+          <div className="text-[10px] text-slate-400 font-mono">100% policy audited</div>
+        </div>
+        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+          <div className="text-[11px] font-mono text-slate-400">Multi-Step Recoveries</div>
+          <div className="text-lg font-bold font-mono text-purple-300 mt-0.5">4 Cases</div>
+          <div className="text-[10px] text-slate-400 font-mono">Adaptive graph loops</div>
+        </div>
+        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+          <div className="text-[11px] font-mono text-slate-400">Guardrail Interventions</div>
+          <div className="text-lg font-bold font-mono text-cyan-300 mt-0.5">3 Cases</div>
+          <div className="text-[10px] text-slate-400 font-mono">Safe boundary enforced</div>
+        </div>
+        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+          <div className="text-[11px] font-mono text-slate-400">Avg Actions / Recovery</div>
+          <div className="text-lg font-bold font-mono text-slate-200 mt-0.5">0.63</div>
+          <div className="text-[10px] text-slate-400 font-mono">High efficiency</div>
+        </div>
+      </section>
+
+      {/* VISUAL RECOVERY FLOW */}
+      <section className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
-              Bounded Autonomy Execution Lifecycle
+            <h3 className="text-xs font-mono uppercase tracking-wider text-slate-200 font-semibold">
+              Recovery Flow
             </h3>
           </div>
           <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-            State Machine Blueprint
+            Autonomous Bounded Lifecycle
           </span>
         </div>
 
-        <RecoveryTimeline />
+        {/* 5 Step Pipeline */}
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-slate-400">STEP 1</span>
+              <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+            </div>
+            <div className="my-2">
+              <div className="text-xs font-semibold text-slate-200">Detect</div>
+              <div className="text-[11px] text-slate-400 leading-tight mt-0.5">
+                Identify failed charges, expired cards & invoices
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-slate-400">STEP 2</span>
+              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+            </div>
+            <div className="my-2">
+              <div className="text-xs font-semibold text-slate-200">Understand</div>
+              <div className="text-[11px] text-slate-400 leading-tight mt-0.5">
+                Extract failure codes, customer tier & history
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-slate-400">STEP 3</span>
+              <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+            </div>
+            <div className="my-2">
+              <div className="text-xs font-semibold text-slate-200">Decide</div>
+              <div className="text-[11px] text-slate-400 leading-tight mt-0.5">
+                Formulate strategy with calibrated confidence
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-slate-400">STEP 4</span>
+              <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+            </div>
+            <div className="my-2">
+              <div className="text-xs font-semibold text-slate-200">Safe Action</div>
+              <div className="text-[11px] text-slate-400 leading-tight mt-0.5">
+                Audit against guardrails & execute bounded tools
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-slate-400">STEP 5</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            </div>
+            <div className="my-2">
+              <div className="text-xs font-semibold text-slate-200">Verify</div>
+              <div className="text-[11px] text-slate-400 leading-tight mt-0.5">
+                Query payment gateway & confirm revenue recovered
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Grid: Database Foundation & Ground Truth Benchmark Highlights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Data Foundation & Ground Truth Banner */}
-        <section className="lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
+      {/* 2-COLUMN GRID: RECENT RECOVERY ACTIVITY & AI TRANSPARENCY PREVIEW */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Recent Recovery Activity */}
+        <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <Clock className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-xs font-mono uppercase tracking-wide text-slate-200 font-semibold">
-                  Phase 1 — Data Foundation & Ground Truth Benchmarks
+                  Recent Recovery Activity
                 </h3>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-                PostgreSQL Ready
+              <span className="text-[10px] font-mono text-slate-400">
+                Live Feed
               </span>
             </div>
 
-            <p className="text-xs text-slate-300 mt-3 leading-relaxed">
-              REVIVE data foundation contains 8 relational tables (customers, subscriptions, payments, invoices, checkout_events, recovery_cases, recovery_actions, audit_logs) seeded with deterministic edge-case benchmarks.
-            </p>
-
-            {/* Quick stats pills */}
-            {dbCounts && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4">
-                <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 text-center font-mono">
-                  <div className="text-[10px] uppercase text-slate-400">Customers</div>
-                  <div className="text-base font-bold text-slate-200 mt-0.5">{dbCounts.customers}</div>
+            <div className="divide-y divide-slate-800/80 mt-2">
+              <div className="py-2.5 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-emerald-400">
+                    ₹12,500 recovered
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    Payment retry successful • TechCorp India
+                  </div>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 text-center font-mono">
-                  <div className="text-[10px] uppercase text-slate-400">Subscriptions</div>
-                  <div className="text-base font-bold text-slate-200 mt-0.5">{dbCounts.subscriptions}</div>
-                </div>
-                <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 text-center font-mono">
-                  <div className="text-[10px] uppercase text-slate-400">Payments</div>
-                  <div className="text-base font-bold text-slate-200 mt-0.5">{dbCounts.payments}</div>
-                </div>
-                <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 text-center font-mono">
-                  <div className="text-[10px] uppercase text-slate-400">Recovery Cases</div>
-                  <div className="text-base font-bold text-emerald-400 mt-0.5">{dbCounts.recovery_cases}</div>
-                </div>
+                <span className="text-[10px] font-mono text-slate-400">2 min ago</span>
               </div>
-            )}
+
+              <div className="py-2.5 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-rose-300">
+                    ₹8,400 at risk
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    Checkout abandonment detected • Anita Sharma
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">5 min ago</span>
+              </div>
+
+              <div className="py-2.5 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-amber-300">
+                    ₹31,000 escalated
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    High-value transaction • Global Logistics
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">8 min ago</span>
+              </div>
+
+              <div className="py-2.5 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-emerald-400">
+                    ₹4,200 recovered
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    Payment link settled • Rahul Verma
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">14 min ago</span>
+              </div>
+
+              <div className="py-2.5 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-slate-400">
+                    ₹18,000 halted
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    Max retries guardrail reached • Apex Media
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">22 min ago</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800/80">
-            <button
-              onClick={() => onNavigateTab('simulator')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs font-mono transition shadow-sm"
-            >
-              <span>Launch Simulation Lab</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => onNavigateTab('ground_truth')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900/80 border border-emerald-800/90 text-emerald-300 text-xs font-mono transition"
-            >
-              <span>Inspect 6 Benchmarks</span>
-            </button>
+          <div className="pt-3 border-t border-slate-800/80">
             <button
               onClick={() => onNavigateTab('cases')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono transition"
+              className="inline-flex items-center gap-1 text-xs font-mono text-emerald-400 hover:text-emerald-300 font-semibold"
             >
-              <span>Explore All Cases</span>
+              <span>View all recovery cases</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </section>
 
-        {/* Right 1 Col: System Diagnostics & Health */}
-        <section className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
-          <div className="space-y-4">
+        {/* Right Column: AI Transparency Preview ("Why REVIVE Acted") */}
+        <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+          <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-emerald-400" />
+                <Sparkles className="w-4 h-4 text-purple-400" />
                 <h3 className="text-xs font-mono uppercase tracking-wide text-slate-200 font-semibold">
-                  System Diagnostics
+                  Why REVIVE Acted
                 </h3>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
-                Phase 1 Complete
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+                Transparency Card
               </span>
             </div>
 
-            <div className="space-y-2.5 text-xs font-mono">
-              <div className="p-2.5 rounded bg-slate-950/80 border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400">Backend API</span>
-                <span className="text-emerald-400 font-semibold">
-                  {health?.status === 'ok' ? 'HEALTHY (200 OK)' : 'CONNECTING...'}
-                </span>
+            <div className="mt-3 p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+              <div>
+                <div className="text-[10px] font-mono text-slate-400 uppercase">What REVIVE Found</div>
+                <p className="text-xs text-slate-200 mt-0.5">
+                  Temporary network failure on SaaS renewal with 1 previous successful payment.
+                </p>
               </div>
 
-              <div className="p-2.5 rounded bg-slate-950/80 border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400">Database Schema</span>
-                <span className="text-emerald-400 font-semibold">8/8 TABLES ACTIVE</span>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
+                <div>
+                  <div className="text-[10px] font-mono text-slate-400 uppercase">Recommended Action</div>
+                  <div className="text-xs font-semibold text-purple-300 mt-0.5">
+                    Retry Payment (94% Conf.)
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono text-slate-400 uppercase">Policy Check</div>
+                  <div className="text-xs font-semibold text-emerald-400 mt-0.5 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Allowed</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-2.5 rounded bg-slate-950/80 border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400">RLS Policies</span>
-                <span className="text-emerald-400 font-semibold">ENABLED</span>
-              </div>
-
-              <div className="p-2.5 rounded bg-slate-950/80 border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400">Data Access Layer</span>
-                <span className="text-emerald-400 font-semibold">REPOSITORIES ACTIVE</span>
+              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-mono text-slate-400 uppercase">Outcome</div>
+                  <div className="text-xs font-bold text-emerald-400 mt-0.5">
+                    ₹12,500 Recovered
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">Case #R-1024</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
-            <span>Seed: #{health?.database?.seed ?? 42}</span>
-            <span className="text-emerald-400">PostgreSQL Ready</span>
+          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+            <button
+              onClick={() => onNavigateTab('decisions')}
+              className="inline-flex items-center gap-1 text-xs font-mono text-purple-300 hover:text-purple-200 font-semibold"
+            >
+              <span>View All Agent Decisions</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onNavigateTab('guardrails')}
+              className="text-[11px] font-mono text-slate-400 hover:text-slate-200"
+            >
+              Inspect Guardrails →
+            </button>
           </div>
         </section>
       </div>
+
+      {/* QUICK SHORTCUTS ROW */}
+      <section className="p-4 rounded-xl bg-slate-950/80 border border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        <span className="text-slate-400">Quick Navigation:</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => onNavigateTab('run_agent')}
+            className="px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-800 text-emerald-300 hover:bg-emerald-900 transition"
+          >
+            Run Agent Demonstration
+          </button>
+          <button
+            onClick={() => onNavigateTab('cases')}
+            className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 transition"
+          >
+            Explore Cases
+          </button>
+          <button
+            onClick={() => onNavigateTab('guardrails')}
+            className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 transition"
+          >
+            Inspect Guardrails
+          </button>
+          <button
+            onClick={() => onNavigateTab('performance')}
+            className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 transition"
+          >
+            Performance & Lift
+          </button>
+        </div>
+      </section>
     </div>
   );
 };

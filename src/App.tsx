@@ -4,10 +4,10 @@ import { Navigation } from './components/Navigation';
 import { OverviewPage } from './pages/OverviewPage';
 import { SimulationLabPage } from './pages/SimulationLabPage';
 import { RecoveryCasesPage } from './pages/RecoveryCasesPage';
-import { GroundTruthPage } from './pages/GroundTruthPage';
 import { LiveAgentPage } from './pages/LiveAgentPage';
+import { AgentDecisionsPage } from './pages/AgentDecisionsPage';
 import { PolicyGuardrailsPage } from './pages/PolicyGuardrailsPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
+import { EvaluationIntelligencePage } from './pages/EvaluationIntelligencePage';
 import { HumanReviewPage } from './pages/HumanReviewPage';
 import { apiService } from './services/api';
 import { NavTab, HealthResponse, AgentStatusType } from './types';
@@ -19,6 +19,7 @@ export default function App() {
   const [strategyMode, setStrategyMode] = useState<'deterministic' | 'ai'>('deterministic');
   const [backendConnected, setBackendConnected] = useState<boolean>(false);
   const [openCasesCount, setOpenCasesCount] = useState<number>(0);
+  const [escalatedCount, setEscalatedCount] = useState<number>(3);
 
   useEffect(() => {
     // Initial health, strategy mode and agent status probe
@@ -59,8 +60,11 @@ export default function App() {
     apiService
       .getMetrics()
       .then((m) => {
-        if (m?.openCasesCount) {
+        if (m?.openCasesCount !== undefined) {
           setOpenCasesCount(m.openCasesCount);
+        }
+        if (m?.escalatedCasesCount !== undefined) {
+          setEscalatedCount(m.escalatedCasesCount);
         }
       })
       .catch((err) => {
@@ -83,6 +87,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         openCasesCount={openCasesCount}
+        escalatedCount={escalatedCount}
       />
 
       {/* Main Content Area */}
@@ -94,12 +99,14 @@ export default function App() {
             onNavigateTab={(tab) => setActiveTab(tab)}
           />
         )}
-        {activeTab === 'simulator' && <SimulationLabPage />}
         {activeTab === 'cases' && <RecoveryCasesPage />}
-        {activeTab === 'ground_truth' && <GroundTruthPage />}
-        {activeTab === 'live_agent' && <LiveAgentPage />}
-        {activeTab === 'policy_guardrails' && <PolicyGuardrailsPage />}
-        {activeTab === 'analytics' && <AnalyticsPage />}
+        {(activeTab === 'run_agent' || activeTab === 'live_agent') && <LiveAgentPage />}
+        {(activeTab === 'simulate' || activeTab === 'simulator') && <SimulationLabPage />}
+        {activeTab === 'decisions' && <AgentDecisionsPage />}
+        {(activeTab === 'guardrails' || activeTab === 'policy_guardrails') && <PolicyGuardrailsPage />}
+        {(activeTab === 'performance' || activeTab === 'evaluation' || activeTab === 'analytics' || activeTab === 'ground_truth') && (
+          <EvaluationIntelligencePage />
+        )}
         {activeTab === 'human_review' && <HumanReviewPage />}
       </main>
 
@@ -107,10 +114,10 @@ export default function App() {
       <footer className="border-t border-slate-900 bg-slate-950 px-6 py-4 text-center text-xs text-slate-500 font-mono flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          <span>REVIVE Core Engine • Phase 6 (Guardrails & Policy Engine)</span>
+          <span>REVIVE Core Engine • Autonomous Revenue Recovery</span>
         </div>
         <div>
-          <span>Deterministic Policy Firewall • Bounded Autonomy • Cryptographic Audit Trails • Safe Escalations</span>
+          <span>Deterministic Baseline Lift • Policy Guardrail Telemetry • Revenue Attribution</span>
         </div>
       </footer>
     </div>

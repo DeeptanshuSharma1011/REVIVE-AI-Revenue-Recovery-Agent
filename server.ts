@@ -22,6 +22,7 @@ import { reviveAgentGraph } from './database/engine/agent/graph';
 import { agentToolRegistry } from './database/engine/agent/tools';
 import { policyEngine } from './database/engine/policy/PolicyEngine';
 import { getPolicyConfig } from './database/engine/policy/config';
+import { evaluationEngine, evaluationRepository } from './database/engine/evaluation';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -404,6 +405,7 @@ async function startServer() {
   });
 
   app.post('/api/database/reset', (req, res) => {
+    aiRecoveryDecisionService.clearCache();
     const result = dataService.resetAndSeed(42, 1.0);
     res.status(200).json({
       message: 'Database reset to default seed (42)',
@@ -526,6 +528,155 @@ async function startServer() {
       res.status(400).json({ error: err.message });
     }
   });
+
+  // ==========================================
+  // PHASE 7: EVALUATION & REVENUE INTELLIGENCE
+  // ==========================================
+
+  // 1. Run full evaluation suite across ground truth benchmark scenarios
+  app.post('/api/evaluation/run', async (req, res) => {
+    try {
+      const { runName, forceDeterministic, scenarioTags } = req.body || {};
+      const run = await evaluationEngine.runEvaluation({
+        runName,
+        forceDeterministic: Boolean(forceDeterministic),
+        scenarioTags: Array.isArray(scenarioTags) ? scenarioTags : undefined,
+      });
+      res.status(200).json(run);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Evaluation run failed', details: String(err) });
+    }
+  });
+
+  // 2. Get list of all evaluation runs
+  app.get('/api/evaluation/runs', (req, res) => {
+    const summaries = evaluationRepository.findSummaries();
+    res.status(200).json({
+      runs: summaries,
+      count: summaries.length,
+      latest: evaluationRepository.getLatest(),
+    });
+  });
+
+  // 3. Get specific evaluation run details
+  app.get('/api/evaluation/runs/:id', (req, res) => {
+    const run = evaluationRepository.findById(req.params.id);
+    if (!run) {
+      res.status(404).json({ error: `Evaluation run '${req.params.id}' not found` });
+      return;
+    }
+    res.status(200).json(run);
+  });
+
+  // 4. Get evaluation run metrics breakdown
+  app.get('/api/evaluation/runs/:id/metrics', (req, res) => {
+    const run = evaluationRepository.findById(req.params.id);
+    if (!run) {
+      res.status(404).json({ error: `Evaluation run '${req.params.id}' not found` });
+      return;
+    }
+    res.status(200).json({
+      evaluation_run_id: run.evaluation_run_id,
+      run_name: run.run_name,
+      primary_metrics: {
+        total_cases: run.total_cases,
+        successful_recoveries: run.successful_recoveries,
+        revenue_at_risk: run.revenue_at_risk,
+        revenue_recovered: run.revenue_recovered,
+        recovery_rate: run.recovery_rate,
+        revenue_recovery_rate: run.revenue_recovery_rate,
+      },
+      agentic_metrics: {
+        multi_step_recovery_rate: run.multi_step_recovery_rate,
+        first_action_recovery_rate: run.first_action_recovery_rate,
+        re_evaluation_recovery_rate: run.re_evaluation_recovery_rate,
+        avg_actions_to_recovery: run.avg_actions_to_recovery,
+        avg_iterations: run.avg_iterations,
+        recovery_after_reevaluation_count: run.recovery_after_reevaluation_count,
+      },
+      ai_metrics: {
+        ai_decisions_count: run.ai_decisions_count,
+        avg_ai_confidence: run.avg_ai_confidence,
+        low_confidence_rate: run.low_confidence_rate,
+        ai_fallback_rate: run.ai_fallback_rate,
+      },
+      policy_metrics: {
+        policy_evaluations: run.policy_evaluations,
+        policy_allowed: run.policy_allowed,
+        policy_modified: run.policy_modified,
+        policy_blocked: run.policy_blocked,
+        policy_escalated: run.policy_escalated,
+        policy_stopped: run.policy_stopped,
+        guardrail_intervention_rate: run.guardrail_intervention_rate,
+      },
+      safety_metrics: run.safety_metrics,
+      operational_efficiency: run.operational_efficiency,
+    });
+  });
+
+  // 5. Get deterministic baseline comparison
+  app.get('/api/evaluation/runs/:id/comparison', (req, res) => {
+    const run = evaluationRepository.findById(req.params.id);
+    if (!run) {
+      res.status(404).json({ error: `Evaluation run '${req.params.id}' not found` });
+      return;
+    }
+    res.status(200).json({
+      evaluation_run_id: run.evaluation_run_id,
+      run_name: run.run_name,
+      baseline_comparison: run.baseline_comparison,
+      scenario_performance: run.scenario_performance,
+    });
+  });
+
+  // 6. Get case-level evaluation results with filtering and search
+  app.get('/api/evaluation/runs/:id/cases', (req, res) => {
+    const run = evaluationRepository.findById(req.params.id);
+    if (!run) {
+      res.status(404).json({ error: `Evaluation run '${req.params.id}' not found` });
+      return;
+    }
+
+    let cases = [...run.cases];
+    const status = req.query.status as string;
+    const scenario = req.query.scenario as string;
+    const search = req.query.search as string;
+
+    if (status) {
+      cases = cases.filter((c) => c.final_status === status);
+    }
+    if (scenario) {
+      cases = cases.filter((c) => c.scenario_id.toLowerCase().includes(scenario.toLowerCase()));
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      cases = cases.filter(
+        (c) =>
+          c.customer_name.toLowerCase().includes(q) ||
+          c.case_id.toLowerCase().includes(q) ||
+          c.scenario_id.toLowerCase().includes(q)
+      );
+    }
+
+    res.status(200).json({
+      cases,
+      total: cases.length,
+      total_unfiltered: run.cases.length,
+    });
+  });
+
+  // 7. Export evaluation run as CSV
+  app.get('/api/evaluation/runs/:id/export', (req, res) => {
+    try {
+      const csv = evaluationEngine.exportRunCSV(req.params.id);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=revive_eval_${req.params.id}.csv`);
+      res.status(200).send(csv);
+    } catch (err: any) {
+      res.status(404).json({ error: err.message });
+    }
+  });
+
 
   // ==========================================
   // PHASE 2: RECOVERY SIMULATOR ENDPOINTS

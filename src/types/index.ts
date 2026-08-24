@@ -8,7 +8,21 @@ export type AgentStatusType =
   | 'ESCALATED'
   | 'ERROR';
 
-export type NavTab = 'overview' | 'cases' | 'simulator' | 'ground_truth' | 'live_agent' | 'policy_guardrails' | 'analytics' | 'human_review';
+export type NavTab =
+  | 'overview'
+  | 'cases'
+  | 'run_agent'
+  | 'simulate'
+  | 'decisions'
+  | 'guardrails'
+  | 'performance'
+  | 'human_review'
+  | 'simulator'
+  | 'ground_truth'
+  | 'live_agent'
+  | 'policy_guardrails'
+  | 'evaluation'
+  | 'analytics';
 
 export interface SimulatedPaymentLink {
   link_id: string;
@@ -665,4 +679,172 @@ export interface AgentMetrics {
   duplicate_action_preventions: number;
   tool_failures: number;
 }
+
+// -------------------------------------------------------------
+// Phase 7: Evaluation & Revenue Intelligence Types
+// -------------------------------------------------------------
+
+export interface EvaluationScenarioSummary {
+  scenario_id: string;
+  scenario_name: string;
+  category: string;
+  description: string;
+  total_cases: number;
+  recovered_cases: number;
+  recovery_rate: number;
+  revenue_at_risk: number;
+  revenue_recovered: number;
+  revenue_recovery_rate: number;
+  avg_actions: number;
+  escalation_rate: number;
+  deterministic_recovery_rate: number;
+  lift: number;
+}
+
+export interface BaselineComparison {
+  deterministic_recovery_rate: number;
+  revive_recovery_rate: number;
+  deterministic_revenue_recovery_rate: number;
+  revive_revenue_recovery_rate: number;
+  deterministic_revenue_recovered: number;
+  revive_revenue_recovered: number;
+  recovery_rate_lift: number;
+  revenue_recovery_lift: number;
+  relative_recovery_improvement: number;
+  avg_actions_deterministic: number;
+  avg_actions_revive: number;
+  escalation_rate_deterministic: number;
+  escalation_rate_revive: number;
+}
+
+export interface EvaluationCaseResult {
+  case_id: string;
+  agent_run_id: string;
+  scenario_id: string;
+  customer_name: string;
+  source_type: string;
+  revenue_at_risk: number;
+  revenue_recovered: number;
+  final_status: string;
+  recovery_success: boolean;
+  actions_taken: number;
+  iterations: number;
+  time_to_resolution_ms: number;
+  human_intervention: boolean;
+  policy_interventions: number;
+  ai_decisions: number;
+  ai_confidence_average: number;
+  deterministic_outcome: {
+    status: string;
+    strategy: string;
+    revenue_recovered: number;
+    actions_count: number;
+    recovery_success: boolean;
+  };
+  agent_outcome: {
+    status: string;
+    strategy: string;
+    revenue_recovered: number;
+    actions_count: number;
+    recovery_success: boolean;
+    re_evaluation_recovery: boolean;
+    policy_decision?: string;
+  };
+  evaluation_timestamp: string;
+}
+
+export interface EvaluationRun {
+  evaluation_run_id: string;
+  run_name: string;
+  started_at: string;
+  completed_at: string;
+  agent_version: string;
+  policy_version: string;
+  prompt_version: string;
+  total_cases: number;
+  completed_cases: number;
+  successful_recoveries: number;
+  escalated_cases: number;
+  stopped_cases: number;
+  failed_cases: number;
+  
+  // Primary Business Metrics
+  revenue_at_risk: number;
+  revenue_recovered: number;
+  revenue_remaining_at_risk: number;
+  recovery_rate: number;
+  revenue_recovery_rate: number;
+  
+  // Agentic Metrics
+  multi_step_recovery_rate: number;
+  first_action_recovery_rate: number;
+  re_evaluation_recovery_rate: number;
+  avg_actions_to_recovery: number;
+  avg_iterations: number;
+  recovery_after_reevaluation_count: number;
+  
+  // AI Decision Metrics
+  ai_decisions_count: number;
+  avg_ai_confidence: number;
+  low_confidence_rate: number;
+  ai_fallback_rate: number;
+  
+  // Policy Metrics
+  policy_evaluations: number;
+  policy_allowed: number;
+  policy_modified: number;
+  policy_blocked: number;
+  policy_escalated: number;
+  policy_stopped: number;
+  guardrail_intervention_rate: number;
+  policy_modification_rate: number;
+  policy_block_rate: number;
+  high_value_escalation_rate: number;
+  
+  // Safety Metrics Breakdown
+  safety_metrics: {
+    duplicate_action_blocks: number;
+    max_retry_blocks: number;
+    max_action_terminations: number;
+    low_confidence_escalations: number;
+    high_value_escalations: number;
+    invalid_strategy_blocks: number;
+    incompatible_action_blocks: number;
+    missing_data_blocks: number;
+    customer_contact_limit_interventions: number;
+    recovery_window_interventions: number;
+  };
+  
+  // Baseline Comparison
+  baseline_comparison: BaselineComparison;
+  
+  // Operational Efficiency Metrics
+  operational_efficiency: {
+    gemini_calls_per_recovered_case: number;
+    actions_per_recovered_case: number;
+    policy_evaluations_per_recovered_case: number;
+    verification_calls_per_recovered_case: number;
+  };
+  
+  // Scenario Performance & Case Details
+  scenario_performance: EvaluationScenarioSummary[];
+  cases: EvaluationCaseResult[];
+  simulated: true;
+}
+
+export interface EvaluationRunSummary {
+  evaluation_run_id: string;
+  run_name: string;
+  started_at: string;
+  completed_at: string;
+  total_cases: number;
+  successful_recoveries: number;
+  revenue_at_risk: number;
+  revenue_recovered: number;
+  recovery_rate: number;
+  revenue_recovery_rate: number;
+  guardrail_intervention_rate: number;
+  recovery_rate_lift: number;
+}
+
 

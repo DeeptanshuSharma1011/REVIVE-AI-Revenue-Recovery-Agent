@@ -42,6 +42,12 @@ export class AIRecoveryDecisionService {
   private modelName: string;
   private confidenceThreshold: number;
 
+  // In-memory decision cache to prevent redundant LLM invocations
+  private decisionCache: Map<string, { decision: StrategyDecision; expiresAt: number }> = new Map();
+  // Quota rate-limit cooldown timestamp (ms)
+  private quotaCooldownUntil: number = 0;
+  private lastRequestTimestamp: number = 0;
+
   constructor(options?: {
     apiKey?: string;
     model?: string;
@@ -50,6 +56,14 @@ export class AIRecoveryDecisionService {
     this.apiKey = options?.apiKey || process.env.GEMINI_API_KEY;
     this.modelName = options?.model || DEFAULT_GEMINI_MODEL;
     this.confidenceThreshold = options?.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
+  }
+
+  /**
+   * Clears the cached decisions (useful for tests or database resets).
+   */
+  public clearCache(): void {
+    this.decisionCache.clear();
+    this.quotaCooldownUntil = 0;
   }
 
   /**
@@ -81,13 +95,25 @@ export class AIRecoveryDecisionService {
    */
   public getStatus() {
     const hasKey = Boolean(this.apiKey || process.env.GEMINI_API_KEY);
+    const isCooldown = Date.now() < this.quotaCooldownUntil;
     return {
       available: hasKey,
       model: this.modelName,
       confidence_threshold: this.confidenceThreshold,
       prompt_version: PROMPT_VERSION,
       has_api_key: hasKey,
+      quota_throttled: isCooldown,
+      cache_size: this.decisionCache.size,
     };
+  }
+
+  /**
+   * Generates a deterministic cache key from the investigation and diagnosis state.
+   */
+  private getCacheKey(context: InvestigationContext, diagnosis: DiagnosisResult): string {
+    const attempt = context.attempt_number ?? (context.source as any)?.attempt_number ?? 1;
+    const failureReason = (context.source as any)?.failure_reason || 'none';
+    return `${context.case_id}::${context.source_type}::${diagnosis.diagnosis}::${attempt}::${failureReason}::${this.modelName}`;
   }
 
   /**
@@ -253,10 +279,21 @@ Respond with ONLY valid JSON matching this schema:
     context: InvestigationContext,
     diagnosis: DiagnosisResult
   ): Promise<StrategyDecision> {
+    const cacheKey = this.getCacheKey(context, diagnosis);
+
+    // 1. Check in-memory decision cache
+    const cached = this.decisionCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return {
+        ...cached.decision,
+        decision_source: 'GEMINI',
+      };
+    }
+
     const client = this.getClient();
     const promptContext = this.buildPromptContext(context, diagnosis);
 
-    // 1. Fallback if API key missing or client initialization failed
+    // 2. Fallback if API key missing or client initialization failed
     if (!client) {
       console.warn('[REVIVE:AI] Gemini API key not configured. Executing deterministic fallback.');
       const fallback = deterministicStrategyProvider.selectStrategy(context, diagnosis);
@@ -268,13 +305,26 @@ Respond with ONLY valid JSON matching this schema:
       };
     }
 
+    // 3. Check if we are currently in quota cooldown
+    if (Date.now() < this.quotaCooldownUntil) {
+      const fallback = deterministicStrategyProvider.selectStrategy(context, diagnosis);
+      return {
+        ...fallback,
+        decision_source: 'DETERMINISTIC_FALLBACK',
+        fallback_reason: 'GEMINI_RATE_LIMIT_COOLDOWN',
+        validation_passed: true,
+      };
+    }
+
     try {
-      // 2. Query Gemini with structured output enforcement
+      // 4. Query Gemini with structured output enforcement
       const promptText = `PROMPT_VERSION: ${PROMPT_VERSION}\nCASE INVESTIGATION DATA:\n${JSON.stringify(
         promptContext,
         null,
         2
       )}\n\nAnalyze this revenue risk case and return the recommended recovery strategy JSON object:`;
+
+      this.lastRequestTimestamp = Date.now();
 
       const response = await client.models.generateContent({
         model: this.modelName,
@@ -288,7 +338,7 @@ Respond with ONLY valid JSON matching this schema:
 
       const responseText = response.text?.trim() || '';
 
-      // 3. Parse JSON
+      // 5. Parse JSON
       let parsedJson: unknown;
       try {
         parsedJson = JSON.parse(responseText);
@@ -304,7 +354,7 @@ Respond with ONLY valid JSON matching this schema:
         };
       }
 
-      // 4. Validate output schema & domain constraints
+      // 6. Validate output schema & domain constraints
       const validation = this.validateDecisionOutput(parsedJson);
       if (!validation.valid || !validation.data) {
         console.warn('[REVIVE:AI] Output schema validation failed:', validation.error);
@@ -320,12 +370,12 @@ Respond with ONLY valid JSON matching this schema:
 
       const decisionData = validation.data;
 
-      // 5. Confidence Threshold Enforcement
+      // 7. Confidence Threshold Enforcement
       if (decisionData.confidence < this.confidenceThreshold) {
         console.info(
           `[REVIVE:AI] Low confidence (${decisionData.confidence} < ${this.confidenceThreshold}). Routing to human escalation.`
         );
-        return {
+        const escalateDecision: StrategyDecision = {
           strategy: 'ESCALATE',
           reason: `Confidence (${(decisionData.confidence * 100).toFixed(0)}%) below autonomous threshold (${(
             this.confidenceThreshold * 100
@@ -343,10 +393,18 @@ Respond with ONLY valid JSON matching this schema:
           prompt_version: PROMPT_VERSION,
           validation_passed: true,
         };
+
+        // Cache for 30 minutes
+        this.decisionCache.set(cacheKey, {
+          decision: escalateDecision,
+          expiresAt: Date.now() + 30 * 60 * 1000,
+        });
+
+        return escalateDecision;
       }
 
-      // 6. Valid High-Confidence AI Decision
-      return {
+      // 8. Valid High-Confidence AI Decision
+      const validDecision: StrategyDecision = {
         strategy: decisionData.strategy,
         reason: decisionData.reason,
         explanation: decisionData.explanation,
@@ -359,13 +417,38 @@ Respond with ONLY valid JSON matching this schema:
         prompt_version: PROMPT_VERSION,
         validation_passed: true,
       };
+
+      // Cache for 30 minutes
+      this.decisionCache.set(cacheKey, {
+        decision: validDecision,
+        expiresAt: Date.now() + 30 * 60 * 1000,
+      });
+
+      return validDecision;
     } catch (apiErr: any) {
-      console.error('[REVIVE:AI] Gemini API invocation error:', apiErr?.message || apiErr);
+      const errMsg = String(apiErr?.message || apiErr || '');
+      const isQuotaError =
+        errMsg.includes('429') ||
+        errMsg.includes('RESOURCE_EXHAUSTED') ||
+        errMsg.includes('Quota exceeded') ||
+        apiErr?.status === 'RESOURCE_EXHAUSTED' ||
+        apiErr?.code === 429;
+
+      if (isQuotaError) {
+        // Set cooldown for 25 seconds to protect the quota
+        this.quotaCooldownUntil = Date.now() + 25000;
+        console.warn(
+          '[REVIVE:AI] Gemini free-tier rate limit reached (429). Activating zero-downtime deterministic fallback strategy.'
+        );
+      } else {
+        console.warn('[REVIVE:AI] Gemini API invocation warning:', errMsg);
+      }
+
       const fallback = deterministicStrategyProvider.selectStrategy(context, diagnosis);
       return {
         ...fallback,
         decision_source: 'DETERMINISTIC_FALLBACK',
-        fallback_reason: `GEMINI_API_FAILURE: ${apiErr?.message || 'Unknown network/API error'}`,
+        fallback_reason: isQuotaError ? 'GEMINI_RATE_LIMIT_COOLDOWN' : `GEMINI_API_FAILURE: ${errMsg}`,
         validation_passed: true,
       };
     }
