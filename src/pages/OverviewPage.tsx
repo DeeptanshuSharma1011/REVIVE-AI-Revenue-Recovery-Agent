@@ -86,9 +86,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-slate-400 font-medium">Revenue at Risk</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-              SIMULATED
-            </span>
           </div>
           <div className="mt-3">
             <div className="text-3xl font-mono font-bold text-rose-300 tracking-tight">
@@ -105,9 +102,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-slate-400 font-medium">Revenue Recovered</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-              SIMULATED
-            </span>
           </div>
           <div className="mt-3">
             <div className="text-3xl font-mono font-bold text-emerald-400 tracking-tight">
@@ -124,9 +118,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-slate-400 font-medium">Recovery Rate</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-              SIMULATED
-            </span>
           </div>
           <div className="mt-3">
             <div className="text-3xl font-mono font-bold text-slate-100 tracking-tight">
@@ -143,9 +134,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-slate-400 font-medium">Needs Review</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">
-              SIMULATED
-            </span>
           </div>
           <div className="mt-3">
             <div className="text-3xl font-mono font-bold text-amber-300 tracking-tight">
@@ -433,37 +421,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           </div>
         </section>
       </div>
-
-      {/* QUICK SHORTCUTS ROW */}
-      <section className="p-4 rounded-xl bg-slate-950/80 border border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-        <span className="text-slate-400">Quick Navigation:</span>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => onNavigateTab('run_agent')}
-            className="px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-800 text-emerald-300 hover:bg-emerald-900 transition"
-          >
-            Run Agent Demonstration
-          </button>
-          <button
-            onClick={() => onNavigateTab('cases')}
-            className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 transition"
-          >
-            Explore Cases
-          </button>
-          <button
-            onClick={() => onNavigateTab('guardrails')}
-            className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 transition"
-          >
-            Inspect Guardrails
-          </button>
-          <button
-            onClick={() => onNavigateTab('performance')}
-            className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 transition"
-          >
-            Performance & Lift
-          </button>
-        </div>
-      </section>
     </div>
   );
 };

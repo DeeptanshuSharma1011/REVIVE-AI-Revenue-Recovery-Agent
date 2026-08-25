@@ -78,8 +78,6 @@ export default function App() {
       <Header
         agentStatus={agentStatus}
         backendConnected={backendConnected}
-        strategyMode={strategyMode}
-        onStrategyModeChange={(mode) => setStrategyMode(mode)}
       />
 
       {/* Primary Editorial Navigation */}
@@ -110,14 +108,18 @@ export default function App() {
         {activeTab === 'human_review' && <HumanReviewPage />}
       </main>
 
-      {/* System Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 px-6 py-4 text-center text-xs text-slate-500 font-mono flex flex-col sm:flex-row items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          <span>REVIVE Core Engine • Autonomous Revenue Recovery</span>
-        </div>
-        <div>
-          <span>Deterministic Baseline Lift • Policy Guardrail Telemetry • Revenue Attribution</span>
+      {/* Clean Global System Footer */}
+      <footer className="border-t border-slate-900/80 bg-slate-950/90 backdrop-blur-sm py-4 px-6 mt-auto">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-mono">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500/80 animate-pulse"></span>
+            <span className="text-slate-400 font-semibold">REVIVE</span>
+            <span className="text-slate-600">•</span>
+            <span>Autonomous &amp; Policy-Bounded Revenue Recovery</span>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+            <span>Razorpay AI Buildathon</span>
+          </div>
         </div>
       </footer>
     </div>

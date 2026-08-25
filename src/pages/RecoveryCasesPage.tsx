@@ -22,7 +22,6 @@ import {
   CheckCircle,
   Play,
   RotateCw,
-  Cpu,
   Bot,
   Sparkles,
   ShieldCheck,
@@ -39,8 +38,7 @@ export const RecoveryCasesPage: React.FC = () => {
   const [customerProfile, setCustomerProfile] = useState<CustomerFullProfile | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
-  // Strategy Mode & AI Decision State
-  const [strategyMode, setStrategyMode] = useState<'deterministic' | 'ai'>('ai');
+  // AI Decision State
   const [aiStatus, setAIStatus] = useState<AIStatusResponse | null>(null);
   const [previewDecision, setPreviewDecision] = useState<StrategyDecision | null>(null);
   const [loadingDecision, setLoadingDecision] = useState(false);
@@ -78,10 +76,9 @@ export const RecoveryCasesPage: React.FC = () => {
     apiService
       .getStrategyMode()
       .then((res) => {
-        setStrategyMode(res.mode);
         if (res.aiStatus) setAIStatus(res.aiStatus);
       })
-      .catch((err) => console.warn('Failed to fetch strategy mode:', err));
+      .catch((err) => console.warn('Failed to fetch AI status:', err));
   };
 
   useEffect(() => {
@@ -106,8 +103,8 @@ export const RecoveryCasesPage: React.FC = () => {
         setCustomerProfile(profile);
       }
 
-      // Preload AI / deterministic decision preview
-      loadDecisionPreview(caseId, strategyMode);
+      // Preload AI decision preview
+      loadDecisionPreview(caseId);
     } catch (err) {
       console.error('Failed to fetch case details:', err);
     } finally {
@@ -115,28 +112,15 @@ export const RecoveryCasesPage: React.FC = () => {
     }
   };
 
-  const loadDecisionPreview = async (caseId: string, mode: 'deterministic' | 'ai') => {
+  const loadDecisionPreview = async (caseId: string) => {
     setLoadingDecision(true);
     try {
-      const dec = await apiService.getRecoveryDecision(caseId, mode);
+      const dec = await apiService.getRecoveryDecision(caseId, 'ai');
       setPreviewDecision(dec);
     } catch (err) {
       console.warn('Failed to fetch decision preview:', err);
     } finally {
       setLoadingDecision(false);
-    }
-  };
-
-  const handleModeChange = async (newMode: 'deterministic' | 'ai') => {
-    setStrategyMode(newMode);
-    try {
-      const res = await apiService.setStrategyMode(newMode);
-      if (res.aiStatus) setAIStatus(res.aiStatus);
-      if (selectedCaseId) {
-        loadDecisionPreview(selectedCaseId, newMode);
-      }
-    } catch (err) {
-      console.error('Failed to update strategy mode:', err);
     }
   };
 
@@ -154,7 +138,7 @@ export const RecoveryCasesPage: React.FC = () => {
     }
 
     try {
-      const result = await apiService.processRecoveryCase(selectedCaseId, strategyMode);
+      const result = await apiService.processRecoveryCase(selectedCaseId, 'ai');
       setActiveStepIndex(stepNames.length - 1);
       setProcessResult(result);
 
@@ -208,38 +192,14 @@ export const RecoveryCasesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Strategy Engine Banner & Mode Selector */}
+      {/* Strategy Engine Banner */}
       <div className="p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl font-mono text-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span>Decision Intelligence Mode:</span>
-          </div>
-
-          <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5">
-            <button
-              onClick={() => handleModeChange('ai')}
-              className={`px-3 py-1 rounded-md text-xs transition-all flex items-center gap-1.5 ${
-                strategyMode === 'ai'
-                  ? 'bg-purple-950/90 text-purple-200 font-bold border border-purple-700/80 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Bot className="w-3.5 h-3.5 text-purple-400" />
-              <span>Gemini AI (Bounded)</span>
-            </button>
-            <button
-              onClick={() => handleModeChange('deterministic')}
-              className={`px-3 py-1 rounded-md text-xs transition-all flex items-center gap-1.5 ${
-                strategyMode === 'deterministic'
-                  ? 'bg-slate-800 text-slate-100 font-bold border border-slate-700 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Cpu className="w-3.5 h-3.5 text-blue-400" />
-              <span>Deterministic</span>
-            </button>
-          </div>
+        <div className="flex items-center gap-2 text-slate-300 font-semibold">
+          <Sparkles className="w-4 h-4 text-purple-400" />
+          <span>Decision Intelligence:</span>
+          <span className="px-2.5 py-0.5 rounded-md bg-purple-950/80 text-purple-200 border border-purple-800/80 font-bold">
+            Gemini 3.7 Bounded AI
+          </span>
         </div>
 
         <div className="flex items-center gap-2 text-[11px] text-slate-400">
@@ -247,7 +207,7 @@ export const RecoveryCasesPage: React.FC = () => {
             Model: <strong className="text-purple-300">{aiStatus?.model || 'gemini-3.7-flash'}</strong>
           </span>
           <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
-            Confidence Threshold:{' '}
+            Confidence Floor:{' '}
             <strong className="text-emerald-400">
               {((aiStatus?.confidence_threshold ?? 0.7) * 100).toFixed(0)}%
             </strong>
@@ -452,15 +412,9 @@ export const RecoveryCasesPage: React.FC = () => {
                 <div className="p-4 rounded-xl bg-slate-950 border border-purple-900/40 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {strategyMode === 'ai' ? (
-                        <Bot className="w-4 h-4 text-purple-400" />
-                      ) : (
-                        <Cpu className="w-4 h-4 text-blue-400" />
-                      )}
+                      <Bot className="w-4 h-4 text-purple-400" />
                       <span className="font-bold text-slate-100 text-xs uppercase tracking-wider">
-                        {strategyMode === 'ai'
-                          ? 'Gemini Bounded Reasoning'
-                          : 'Deterministic Rule Engine'}
+                        Gemini Bounded Reasoning
                       </span>
                     </div>
 
@@ -469,9 +423,7 @@ export const RecoveryCasesPage: React.FC = () => {
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           previewDecision.decision_source === 'GEMINI'
                             ? 'bg-purple-950 text-purple-300 border border-purple-800'
-                            : previewDecision.decision_source === 'DETERMINISTIC_FALLBACK'
-                            ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                            : 'bg-blue-950 text-blue-300 border border-blue-800'
+                            : 'bg-amber-950 text-amber-300 border border-amber-800'
                         }`}
                       >
                         Source: {previewDecision.decision_source}
@@ -481,7 +433,7 @@ export const RecoveryCasesPage: React.FC = () => {
 
                   {loadingDecision ? (
                     <div className="py-2 text-center text-slate-400 animate-pulse">
-                      Analyzing case with {strategyMode === 'ai' ? 'Gemini 3.7' : 'Deterministic Rules'}...
+                      Analyzing case context with Gemini 3.7...
                     </div>
                   ) : previewDecision ? (
                     <div className="space-y-2 text-[11px]">
@@ -548,9 +500,7 @@ export const RecoveryCasesPage: React.FC = () => {
                       className={`w-full py-2.5 px-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${
                         caseDetails.case.status === 'RECOVERED'
                           ? 'bg-emerald-600/30 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40'
-                          : strategyMode === 'ai'
-                          ? 'bg-purple-600 hover:bg-purple-500 text-slate-100 shadow-lg shadow-purple-600/20'
-                          : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20'
+                          : 'bg-purple-600 hover:bg-purple-500 text-slate-100 shadow-lg shadow-purple-600/20'
                       } ${isProcessing ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       {isProcessing ? (
@@ -564,7 +514,7 @@ export const RecoveryCasesPage: React.FC = () => {
                           <span>
                             {caseDetails.case.status === 'RECOVERED'
                               ? 'Re-evaluate Recovery Case'
-                              : `Execute Recovery (${strategyMode === 'ai' ? 'Gemini AI Mode' : 'Deterministic Mode'})`}
+                              : 'Execute Autonomous Recovery'}
                           </span>
                         </>
                       )}

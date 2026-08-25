@@ -207,7 +207,51 @@ export const LiveAgentPage: React.FC = () => {
               <span className="text-[10px] font-mono text-slate-500">{scenarios.length} Scenarios</span>
             </div>
 
-            <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+            {/* Quick Demo Presets */}
+            <div className="space-y-1.5 pt-1 pb-2 border-b border-slate-800">
+              <div className="text-[10px] font-mono text-slate-400 font-semibold uppercase tracking-wider">
+                Curated Demo Presets
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  onClick={() => handleScenarioSelect('GT_SUCCESSFUL_RETRY')}
+                  className={`p-2 rounded-lg text-left border text-[11px] font-mono transition flex flex-col justify-between ${
+                    selectedTag === 'GT_SUCCESSFUL_RETRY'
+                      ? 'bg-emerald-950/70 border-emerald-500/80 text-emerald-200 shadow-sm'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="font-bold text-emerald-400">Case A</span>
+                  <span className="text-[10px] text-slate-300 leading-tight">Direct Recovery</span>
+                </button>
+
+                <button
+                  onClick={() => handleScenarioSelect('GT_CHECKOUT_ABANDONMENT')}
+                  className={`p-2 rounded-lg text-left border text-[11px] font-mono transition flex flex-col justify-between ${
+                    selectedTag === 'GT_CHECKOUT_ABANDONMENT'
+                      ? 'bg-purple-950/70 border-purple-500/80 text-purple-200 shadow-sm'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="font-bold text-purple-400">Case B</span>
+                  <span className="text-[10px] text-slate-300 leading-tight">Adaptive Link</span>
+                </button>
+
+                <button
+                  onClick={() => handleScenarioSelect('GT_HIGH_VALUE_ESCALATION')}
+                  className={`p-2 rounded-lg text-left border text-[11px] font-mono transition flex flex-col justify-between ${
+                    selectedTag === 'GT_HIGH_VALUE_ESCALATION'
+                      ? 'bg-amber-950/70 border-amber-500/80 text-amber-200 shadow-sm'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="font-bold text-amber-400">Case C</span>
+                  <span className="text-[10px] text-slate-300 leading-tight">Escalation</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
               {scenarios.map((sc) => {
                 const isSelected = selectedTag === sc.tag;
                 return (
