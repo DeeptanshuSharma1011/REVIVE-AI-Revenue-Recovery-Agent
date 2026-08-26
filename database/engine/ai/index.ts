@@ -9,3 +9,4 @@ export * from './AIRecoveryDecisionService';
 export * from './AIStrategyProvider';
 export * from './MockAIStrategyProvider';
 export * from './AIEvaluationEngine';
+export * from './prompts';

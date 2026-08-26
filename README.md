@@ -8,17 +8,38 @@ REVIVE is an action-oriented, bounded-autonomy agent that autonomously identifie
 
 ---
 
-## 📌 Current Status
+## 🏛️ REVIVE Architecture
 
-**Phase 5 — Agentic Orchestration: LangGraph Multi-Step Recovery Agent (IMPLEMENTED)**
+```text
+Data Source
+    ↓
+   API
+    ↓
+  Agent
+    ↓
+  Tools
+    ↓
+  Policy
+    ↓
+ Recovery
+    ↓
+Verification
+    ↓
+  Audit
+    ↓
+ Metrics
+```
 
-Phases 0 through 5 are fully implemented, verified, and tested:
-- **Phase 0**: Project foundation, full-stack server, fintech command center UI shell, and health endpoints.
-- **Phase 1**: Complete 8-table relational schema, in-memory repository layer with Supabase/PostgreSQL schema mappings, seeded synthetic generator, and 6 Ground Truth Benchmark scenarios.
-- **Phase 2**: Deterministic, isolated Recovery Simulator engine with 7 recovery action tools (`retry_payment`, `schedule_payment_retry`, `generate_payment_link`, `send_customer_notification`, `request_payment_method_update`, `escalate_to_human`, `stop_recovery`), state transition hooks, verification tools (`check_payment_status`, `check_recovery_status`), automated audit logging, and an interactive Simulation Lab workbench.
-- **Phase 3**: End-to-end Deterministic Recovery Engine with 7 pipeline stages, metrics computation, and idempotency (45/45 passing tests).
-- **Phase 4**: AI Decision Engine using Gemini 3.7 Flash (`@google/genai`) with structured schema output, confidence thresholding, fallback mechanisms, and evaluation matrix (34/34 passing tests).
-- **Phase 5**: LangGraph-inspired stateful multi-step agent orchestrator (`ReviveAgentGraph`, `ReviveAgentNodes`, `ReviveAgentToolRegistry`) with 11 discrete graph nodes, real-time node timeline tracking, iterative re-evaluation loop, safety guardrails (max iterations, max actions, anti-looping), and interactive Live Agent Console UI (31/31 passing tests).
+### Architectural Components
+- **Data Source**: Manages relational entities across 8 core domain tables (customers, subscriptions, payments, invoices, checkout events, cases, actions, audit logs) and deterministic benchmark scenarios.
+- **API**: Full-stack Express REST API providing type-safe endpoints for recovery orchestration, live agent streaming, policy rules, and metrics.
+- **Agent**: LangGraph-inspired stateful multi-step workflow with 11 discrete nodes, iterative re-evaluation loops, and bounded tool calls.
+- **Tools**: Structured registry of 11 formal agent tools for investigation, diagnosis, transaction retries, payment links, and customer communications.
+- **Policy**: Deterministic, zero-trust safety guardrail engine enforcing financial limits (> ₹25,000 threshold), max retries (<= 2), anti-looping protection, and human escalation gates.
+- **Recovery**: Core execution engine and simulation subsystem that applies targeted recovery strategies and mutates transaction state.
+- **Verification**: Dedicated validation tools that query payment gateways and ledger status to verify settlement before closing cases.
+- **Audit**: Immutable, structured audit logger recording tool inputs, outputs, policy decisions, and operator explanation cards for complete transparency.
+- **Metrics**: Real-time KPI engine computing recovery rates, autonomous intervention lift, financial savings, and benchmark accuracy.
 
 ---
 
@@ -26,12 +47,13 @@ Phases 0 through 5 are fully implemented, verified, and tested:
 
 - **Frontend**: React 19, TypeScript, Tailwind CSS, Lucide Icons, Motion *(IMPLEMENTED)*
 - **Backend**: Node.js / Express Server (`tsx` in development, `esbuild` in production) *(IMPLEMENTED)*
-- **Database & Data Access**: 8 relational tables, repository pattern, deterministic synthetic data generator *(IMPLEMENTED — Phase 1)*
-- **Recovery Simulator**: 7 deterministic action tools, state mutation engine, audit trail, simulation flag enforcement *(IMPLEMENTED — Phase 2)*
-- **Deterministic Recovery Engine**: Rule-based recovery workflow with 7 pipeline stages, metrics computation, and idempotency *(IMPLEMENTED — Phase 3)*
-- **Reasoning Engine**: Google Gemini API via `@google/genai` with structured JSON schema *(IMPLEMENTED — Phase 4)*
-- **Agent Orchestrator**: LangGraph multi-step state machine with iterative re-evaluation & bounded tools *(IMPLEMENTED — Phase 5)*
-- **Guardrail Layer**: Deterministic Policy Engine *(PLANNED — Phase 6)*
+- **Database & Data Access**: 8 relational tables, repository pattern, deterministic synthetic data generator *(IMPLEMENTED)*
+- **Recovery Simulator**: 7 deterministic action tools, state mutation engine, audit trail, simulation flag enforcement *(IMPLEMENTED)*
+- **Deterministic Recovery Engine**: Rule-based recovery workflow with 7 pipeline stages, metrics computation, and idempotency *(IMPLEMENTED)*
+- **Reasoning Engine**: Google Gemini API via `@google/genai` (Gemini 3.7 Flash) with structured JSON schema and prompt versioning *(IMPLEMENTED)*
+- **Agent Orchestrator**: LangGraph-inspired multi-step state machine with iterative re-evaluation & bounded tools *(IMPLEMENTED)*
+- **Guardrail Layer**: Deterministic Policy Engine with zero-trust safety rules *(IMPLEMENTED)*
+- **Evaluation Engine**: 12 Golden Ground-Truth Benchmark Matrix with CSV Export *(IMPLEMENTED)*
 
 ---
 
@@ -39,46 +61,50 @@ Phases 0 through 5 are fully implemented, verified, and tested:
 
 ```text
 REVIVE/
-├── .env.example                # Environment variable declarations
-├── .gitignore                  # Git exclusions
-├── database/
-│   ├── db.ts                   # In-memory database instance with relational models
-│   ├── repositories/           # Data access repositories (Customer, Payment, RecoveryCase, etc.)
-│   ├── simulator/              # Phase 2 Recovery Simulator service & outcome determinism
-│   │   ├── models.ts           # Simulator models and action contracts
-│   │   ├── outcomes.ts         # Deterministic outcome calculation rules
-│   │   ├── paymentSimulator.ts # Core payment action simulations
-│   │   ├── recoverySimulator.ts# Orchestrator for all 7 actions & verification tools
-│   │   └── index.ts            # Simulator barrel export
-│   └── synthetic/              # Deterministic generator & 6 Ground Truth scenarios
-├── docs/
-│   └── ARCHITECTURE.md         # Technical architecture & implementation status
-├── index.html                  # HTML entry point
-├── metadata.json               # Platform metadata
-├── package.json                # Project dependencies & scripts
-├── README.md                   # Project documentation & roadmap
-├── scripts/
-│   └── test_recovery_simulator.ts # Phase 2 test suite (43 assertions, 100% pass)
-├── server.ts                   # Full-stack backend API routes
-├── src/
-│   ├── components/             # Reusable UI components
-│   ├── pages/
-│   │   ├── OverviewPage.tsx    # Command center dashboard
-│   │   ├── SimulationLabPage.tsx # Phase 2 interactive simulation lab
-│   │   ├── RecoveryCasesPage.tsx # Database cases inspector
-│   │   ├── GroundTruthPage.tsx # 6 Ground Truth benchmark review
-│   │   ├── LiveAgentPage.tsx   # Live agent workspace
-│   │   ├── AnalyticsPage.tsx   # Revenue metrics & analytics
-│   │   └── HumanReviewPage.tsx # Human escalation review queue
-│   ├── services/
-│   │   └── api.ts              # Frontend API client
-│   ├── types/
-│   │   └── index.ts            # TypeScript interfaces & types
-│   ├── App.tsx                 # Core App layout & page routing
-│   ├── index.css               # Global Tailwind CSS styles
-│   └── main.tsx                # Client entry point
-├── tsconfig.json               # TypeScript compiler options
-└── vite.config.ts              # Vite configuration
+├── .env.example                      # Environment variable declarations
+├── database/                         # Core Backend Engine & Data Layer
+│   ├── db.ts                         # In-memory database instance with relational models
+│   ├── schema.ts                     # Schema and table definitions
+│   ├── migrations/                   # SQL migration scripts
+│   ├── repositories/                 # 8 Data access repositories
+│   ├── services/                     # Business services (dataService)
+│   ├── simulator/                    # Recovery & payment simulator subsystem
+│   ├── synthetic/                    # Deterministic generator & 12 Ground Truth scenarios
+│   └── engine/                       # Autonomous Recovery Engine Subsystems
+│       ├── agent/                    # LangGraph workflow, nodes, tools & state
+│       ├── ai/                       # Gemini advisory engine & prompts.ts
+│       ├── policy/                   # Deterministic PolicyEngine & safety rules
+│       ├── evaluation/               # Benchmark evaluation engine & repository
+│       ├── investigation.ts          # Context gathering
+│       ├── diagnosis.ts              # Failure root-cause analysis
+│       ├── strategy.ts               # Strategy formulation
+│       ├── execution.ts              # Action dispatching
+│       ├── verification.ts           # State verification
+│       ├── outcome.ts                # Case finalization
+│       ├── metrics.ts                # Real-time KPIs
+│       └── RecoveryEngine.ts         # Main recovery coordinator
+├── docs/                             # Architecture & Guide Documentation
+│   ├── architecture.md               # Complete architectural specification
+│   ├── data-flow.md                  # End-to-end data lifecycle
+│   ├── agent-workflow.md             # LangGraph state machine & node transitions
+│   └── demo-guide.md                 # 3 live judge demonstration walkthroughs
+├── scripts/                          # Automated Verification & Test Suites
+│   ├── test_data_foundation.ts       # Data & repository test suite
+│   ├── test_recovery_simulator.ts    # Simulator action & verification tests
+│   ├── test_recovery_engine.ts       # 7-stage pipeline & idempotency tests
+│   ├── test_ai_decision_engine.ts    # Gemini AI & fallback tests
+│   ├── test_policy_guardrails.ts     # Policy guardrails & safety tests
+│   ├── test_agent_orchestration.ts   # LangGraph agent orchestration tests
+│   └── test_evaluation_engine.ts     # Benchmark evaluation tests
+├── server.ts                         # Full-stack Express API Server
+├── src/                              # Modern React 19 Frontend
+│   ├── components/                   # Navigation, Header, Timeline, Status
+│   ├── pages/                        # Command center view pages
+│   ├── services/                     # Frontend API client
+│   ├── types/                        # TypeScript types
+│   ├── App.tsx                       # App shell & router
+│   └── main.tsx                      # Entry point
+└── package.json                      # Build & test scripts
 ```
 
 ---
@@ -89,39 +115,21 @@ REVIVE/
 # 1. Install dependencies
 npm install
 
-# 2. Run Phase 3 Deterministic Recovery Engine Test Suite
-npx tsx scripts/test_recovery_engine.ts
-
-# 3. Run Phase 2 Simulator Test Suite
-npx tsx scripts/test_recovery_simulator.ts
-
-# 4. Run Phase 1 Data Foundation Test Suite
+# 2. Run All Automated Test Suites
 npx tsx scripts/test_data_foundation.ts
+npx tsx scripts/test_recovery_simulator.ts
+npx tsx scripts/test_recovery_engine.ts
+npx tsx scripts/test_ai_decision_engine.ts
+npx tsx scripts/test_policy_guardrails.ts
+npx tsx scripts/test_agent_orchestration.ts
+npx tsx scripts/test_evaluation_engine.ts
 
-# 5. Start the local full-stack server (runs Express & Vite on port 3000)
+# 3. Start local development server (Express + Vite on port 3000)
 npm run dev
 
-# 6. Verify TypeScript types and linting
+# 4. Check code quality & linting
 npm run lint
 
-# 7. Compile & package for production build
+# 5. Compile production bundle
 npm run build
-
-# 8. Launch compiled production bundle
-npm start
 ```
-
----
-
-## 🗺️ Development Roadmap
-
-- [x] **Phase 0 — Project Foundation**: Repository structure, backend health endpoints, environment templates, and UI command-center shell.
-- [x] **Phase 1 — Data Foundation**: 8 relational tables, synthetic data generator, ground-truth scenarios, and data access layer.
-- [x] **Phase 2 — Recovery Simulator**: 7 deterministic action tools, state mutation engine, outcome determinism, verification tools, and Simulation Lab console.
-- [x] **Phase 3 — Deterministic Recovery Engine**: Rule-based recovery workflow with modular pipeline, metrics engine, idempotency, and automated test suite.
-- [x] **Phase 4 — Agentic AI**: Gemini-powered context reasoning, schema validation, and fallback mechanisms.
-- [x] **Phase 5 — LangGraph Orchestration**: Stateful graph orchestration, bounded tools, and iterative re-evaluation loops.
-- [ ] **Phase 6 — Guardrails + Audit**: Deterministic policy enforcement, safety rules engine, and cryptographically verifiable audit trails.
-- [ ] **Phase 7 — Evaluation**: 100+ scenario benchmark evaluation harness and regression tracking.
-- [ ] **Phase 8 — Premium Frontend**: Live recovery stream and interactive case inspector.
-- [ ] **Phase 9 — Demo Mode**: 3 judge-ready reproducible live demonstration flows.

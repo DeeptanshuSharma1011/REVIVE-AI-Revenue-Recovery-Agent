@@ -166,8 +166,8 @@ async function runAIEngineTests() {
   const mockPerfectAI = new MockAIStrategyProvider({ mode: 'PERFECT_AGREEMENT' });
 
   const evalReport = await aiEvaluationEngine.evaluateGroundTruth(mockPerfectAI);
-  assert(evalReport.total_scenarios === 6, 'Benchmark Evaluation', 'Evaluated 6 ground-truth scenarios');
-  assert(evalReport.agreements_count === 6, 'Benchmark Evaluation', '100% agreement on benchmark suite');
+  assert(evalReport.total_scenarios >= 6, 'Benchmark Evaluation', `Evaluated ${evalReport.total_scenarios} ground-truth scenarios`);
+  assert(evalReport.agreements_count === evalReport.total_scenarios, 'Benchmark Evaluation', '100% agreement on benchmark suite');
   assert(evalReport.agreement_rate_percent === 100, 'Benchmark Evaluation', 'Agreement rate is 100%');
   assert(evalReport.average_confidence >= 0.9, 'Benchmark Evaluation', 'Average confidence >= 0.90');
 

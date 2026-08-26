@@ -14,5 +14,7 @@ export * from './verification';
 export * from './outcome';
 export * from './metrics';
 export * from './RecoveryEngine';
+export * from './ai';
+export * from './agent';
 export * from './policy';
 export * from './evaluation';
