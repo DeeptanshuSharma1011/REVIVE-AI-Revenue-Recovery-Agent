@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 
 import { db } from './database/db';
@@ -24,8 +23,6 @@ import { policyEngine } from './database/engine/policy/PolicyEngine';
 import { getPolicyConfig } from './database/engine/policy/config';
 import { evaluationEngine, evaluationRepository } from './database/engine/evaluation';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
