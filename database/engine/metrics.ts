@@ -37,9 +37,19 @@ export class RecoveryMetricsEngine {
       }
     }
 
-    const revenueRecovered = actions
-      .filter((a) => a.status === 'SUCCESS')
-      .reduce((sum, a) => sum + (a.amount_recovered || 0), 0);
+    const recoveredByCase = new Map<string, number>();
+    for (const a of actions) {
+      if (a.status === 'SUCCESS') {
+        const cur = recoveredByCase.get(a.case_id) || 0;
+        recoveredByCase.set(a.case_id, cur + (a.amount_recovered || 0));
+      }
+    }
+
+    let revenueRecovered = 0;
+    for (const [cId, amt] of recoveredByCase.entries()) {
+      const c = db.recoveryCases.get(cId);
+      revenueRecovered += c ? Math.min(c.revenue_at_risk, amt) : amt;
+    }
 
     const casesProcessed = cases.filter(
       (c) => c.status === 'RECOVERED' || c.status === 'ESCALATED' || c.status === 'CLOSED' || c.status === 'ACTION_PENDING'

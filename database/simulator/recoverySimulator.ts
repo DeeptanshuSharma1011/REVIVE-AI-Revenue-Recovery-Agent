@@ -237,9 +237,12 @@ export class RecoverySimulatorService {
     const actions = recoveryActionRepository.findByCaseId(caseId);
     const auditLogs = auditRepository.findByCaseId(caseId);
 
-    const amountRecovered = actions
-      .filter((a) => a.status === 'SUCCESS')
-      .reduce((sum, a) => sum + (a.amount_recovered || 0), 0);
+    const amountRecovered = Math.min(
+      rCase.revenue_at_risk,
+      actions
+        .filter((a) => a.status === 'SUCCESS')
+        .reduce((sum, a) => sum + (a.amount_recovered || 0), 0)
+    );
 
     return {
       case_id: rCase.case_id,

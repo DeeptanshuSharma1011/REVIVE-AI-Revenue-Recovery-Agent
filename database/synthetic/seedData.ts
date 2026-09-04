@@ -116,8 +116,8 @@ export function generateSyntheticData(seed = 42, scaleMultiplier = 1.0): SeedDat
     failure_reason: 'temporary_failure',
     attempt_number: 1,
     payment_method: 'UPI',
-    created_at: new Date('2026-08-23T08:30:00Z').toISOString(),
-    updated_at: new Date('2026-08-23T08:30:00Z').toISOString(),
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
   };
   payments.push(gt1FailedPayment);
 
@@ -131,7 +131,7 @@ export function generateSyntheticData(seed = 42, scaleMultiplier = 1.0): SeedDat
     status: 'OPEN',
     current_strategy: null,
     scenario_tag: 'GT_SUCCESSFUL_RETRY',
-    created_at: new Date('2026-08-23T08:30:10Z').toISOString(),
+    created_at: new Date(Date.now() - 2 * 86400000 + 10000).toISOString(),
     resolved_at: null,
   };
   recoveryCases.push(gt1Case);
@@ -916,16 +916,6 @@ export function generateSyntheticData(seed = 42, scaleMultiplier = 1.0): SeedDat
           };
           if (rCase.status === 'RECOVERED') {
             rCase.resolved_at = new Date(new Date(pDate).getTime() + 86400000).toISOString();
-            recoveryActions.push({
-              action_id: prng.uuid('act'),
-              case_id: rCase.case_id,
-              action_type: 'RETRY_PAYMENT',
-              reason: 'Scheduled automated retry after bank settlement window.',
-              status: 'SUCCESS',
-              executed_at: rCase.resolved_at,
-              result: { payment_id: pay.payment_id, status: 'recovered' },
-              amount_recovered: plan.amount,
-            });
           }
           recoveryCases.push(rCase);
         }
@@ -1045,8 +1035,9 @@ export function generateSyntheticData(seed = 42, scaleMultiplier = 1.0): SeedDat
   }
 
   // Populate synthetic actions & audit logs for a subset of cases
+  const existingActionCaseIds = new Set(recoveryActions.map((a) => a.case_id));
   for (const c of recoveryCases) {
-    if (c.scenario_tag === 'GT_MAX_RETRY_STOP') continue; // Already added
+    if (c.scenario_tag === 'GT_MAX_RETRY_STOP' || existingActionCaseIds.has(c.case_id)) continue;
 
     if (c.status === 'RECOVERED' || c.status === 'ESCALATED' || c.status === 'ACTION_PENDING') {
       const actId = prng.uuid('act');

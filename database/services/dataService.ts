@@ -186,16 +186,21 @@ export class DataService {
       }
     }
 
-    const totalRecoveredRevenue = actions
-      .filter((a) => a.status === 'SUCCESS')
-      .reduce((sum, a) => sum + (a.amount_recovered || 0), 0);
-
+    const recoveredByCase = new Map<string, number>();
     for (const a of actions) {
       if (a.status === 'SUCCESS') {
-        const c = db.recoveryCases.get(a.case_id);
-        if (c && breakdownBySource[c.source_type]) {
-          breakdownBySource[c.source_type].recovered += a.amount_recovered || 0;
-        }
+        const cur = recoveredByCase.get(a.case_id) || 0;
+        recoveredByCase.set(a.case_id, cur + (a.amount_recovered || 0));
+      }
+    }
+
+    let totalRecoveredRevenue = 0;
+    for (const [cId, amt] of recoveredByCase.entries()) {
+      const c = db.recoveryCases.get(cId);
+      const capped = c ? Math.min(c.revenue_at_risk, amt) : amt;
+      totalRecoveredRevenue += capped;
+      if (c && breakdownBySource[c.source_type]) {
+        breakdownBySource[c.source_type].recovered += capped;
       }
     }
 
